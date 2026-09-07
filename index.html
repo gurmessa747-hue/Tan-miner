@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>TAN Miner</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body {
+      font-family: system-ui, sans-serif;
+      background: linear-gradient(180deg, #f6d365 0%, #c9a227 50%, #8a6a12 100%);
+      color: #3b2a00;
+      padding: 12px 12px 90px;
+    }
+    #err {
+      display: none;
+      background: #7a1f1f;
+      color: #fff;
+      padding: 8px 10px;
+      border-radius: 10px;
+      font-size: 12px;
+      margin-bottom: 8px;
+      word-break: break-word;
+    }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .pill, .wallet-btn {
+      background: rgba(255,255,255,.4);
+      border: 1px solid rgba(120,80,0,.25);
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 12px;
+      color: #3b2a00;
+    }
+    .coin {
+      width: 150px; height: 150px; margin: 16px auto;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #fff6c8, #e0b000 55%, #b8860b);
+      display: grid; place-items: center;
+      font-size: 40px; font-weight: 800;
+    }
+    .pending { text-align: center; font-size: 24px; color: #145a24; font-weight: 800; }
+    .meta { text-align: center; font-size: 13px; margin-top: 4px; }
+    button.main, button.ghost, .task button {
+      width: 100%; border: 0; border-radius: 14px; padding: 14px; font-weight: 800;
+    }
+    button.main { background: #ffe082; color: #3b2a00; margin: 10px 0 8px; }
+    button.ghost, .task button {
+      background: rgba(255,255,255,.35);
+      border: 1px solid rgba(120,80,0,.2);
+      color: #3b2a00; margin: 6px 0;
+    }
+    .card {
+      background: rgba(255,255,255,.28);
+      border-radius: 16px; padding: 12px; margin-top: 10px;
+    }
+    .task { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 8px 0; }
+    .task button { width: auto; padding: 8px 12px; }
+    .tabs {
+      position: fixed; left: 0; right: 0; bottom: 0;
+      display: grid; grid-template-columns: 1fr 1fr 1fr;
+      background: #c9a227; padding: 8px; gap: 6px; z-index: 20;
+    }
+    .tabs button { border: 0; border-radius: 12px; padding: 12px; font-weight: 800; background: transparent; }
+    .tabs button.active { background: rgba(255,255,255,.45); }
+    .page { display: none; }
+    .page.active { display: block; }
+  </style>
+</head>
+<body>
+  <div id="err"></div>
+
+  <div class="top">
+    <div class="pill">Lv <span id="level">1</span>/500 · <span id="hs">0.20</span> TH/s</div>
+    <button class="wallet-btn" id="walletBtn">Connect Wallet</button>
+  </div>
+
+  <div id="page-mine" class="page active">
+    <div class="coin">TAN</div>
+    <div class="pending" id="pending">+0.0000 TAN</div>
+    <div class="meta">Balance: <span id="balance">0.00</span> TAN</div>
+    <div class="meta">Wallet TAN: <span id="onchain">0.00</span></div>
+    <div class="meta">Boost: x<span id="boost">1.00</span></div>
+    <div class="meta" id="status">Idle</div>
+    <button class="main" id="startBtn">START TAN MINING</button>
+    <button class="ghost" id="claimBtn">CLAIM TAN</button>
+    <button class="ghost" id="upgradeBtn">Upgrade miner</button>
+  </div>
+
+  <div id="page-tasks" class="page">
+    <h3>Tasks</h3>
+    <div class="card" id="tasks"></div>
+  </div>
+
+  <div id="page-friends" class="page">
+    <h3>Friends / StartApp</h3>
+    <div class="card">
+      <div>Your invite link:</div>
+      <div id="refLink" style="word-break:break-all;font-size:13px;margin:8px 0;"></div>
+      <button class="ghost" id="copyRef">Copy link</button>
+      <div class="meta">Referrals: <span id="refs">0</span></div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="active" data-page="page-mine">Mine</button>
+    <button data-page="page-tasks">Tasks</button>
+    <button data-page="page-friends">Friends</button>
+  </div>
+
+<script>
+  function showErr(e) {
+    const el = document.getElementById("err");
+    el.style.display = "block";
+    el.textContent = String(e && e.message ? e.message : e);
+  }
+  window.onerror = (msg) => showErr(msg);
+
+  const BOT_USERNAME = "TANMINER_BOT";
+  const TAN_JETTON_MASTER = "EQAm7g9TfpInfWprTLjRSL4PZGm9UpOq05NuoakjzuUYw4V1";
+  const MAX_LEVEL = 500;
+
+  try {
+    const tg = window.Telegram && window.Telegram.WebApp;
+    if (tg) { tg.ready(); tg.expand(); }
+
+    function levelHs(level) { return 0.20 * Math.pow(1.015, level - 1); }
+    function levelCost(level) { return level <= 1 ? 0 : Math.floor(20 * Math.pow(level, 1.35)); }
+
+    const TASKS = [
+      { id: "tg", title: "Join TAN channel", reward: 25 },
+      { id: "x", title: "Follow TAN on X", reward: 25 },
+      { id: "share", title: "Share invite link", reward: 15 },
+      { id: "wallet", title: "Connect TON wallet", reward: 40 },
+    ];
+
+    const state = JSON.parse(localStorage.getItem("tan-miner-v3") || "null") || {
+      balance: 0, pending: 0, level: 1, mining: false,
+      startedAt: null, lastTick: Date.now(),
+      wallet: null, onchainTan: 0, tasksDone: {}, refs: []
+    };
+
+    function save() { localStorage.setItem("tan-miner-v3", JSON.stringify(state)); }
+    function userId() { return String((tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) || "local"); }
+    function boost() { return 1 + ((state.balance || 0) + (state.onchainTan || 0)) / 10000; }
+
+    function accrue() {
+      if (!state.mining) return;
+      const now = Date.now();
+      const dt = (now - state.lastTick) / 1000;
+      state.pending += levelHs(state.level) * 0.001 * boost() * dt;
+      state.lastTick = now;
+    }
+
+    function render() {
+      accrue();
+      document.getElementById("pending").textContent = "+" + state.pending.toFixed(4) + " TAN";
+      document.getElementById("balance").textContent = state.balance.toFixed(2);
+      document.getElementById("onchain").textContent = Number(state.onchainTan || 0).toFixed(2);
+      document.getElementById("boost").textContent = boost().toFixed(2);
+      document.getElementById("level").textContent = state.level;
+      document.getElementById("hs").textContent = (levelHs(state.level) * boost()).toFixed(4);
+      document.getElementById("status").textContent = state.mining ? "Mining TAN..." : "Idle";
+      document.getElementById("startBtn").textContent = state.mining ? "MINING TAN" : "START TAN MINING";
+      document.getElementById("upgradeBtn").textContent =
+        state.level >= MAX_LEVEL ? "Max level 500" : "Upgrade to Lv " + (state.level + 1) + " (" + levelCost(state.level + 1) + " TAN)";
+      document.getElementById("refs").textContent = state.refs.length;
+      document.get
