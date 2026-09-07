@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>TAN Miner</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+<style>
+  :root{
+    --bg-deep: #1B140F;
+    --bg-panel: #241A13;
+    --bg-panel-raised: #2E2116;
+    --copper: #C97A3B;
+    --copper-bright: #E08D45;
+    --amber: #F2A65A;
+    --ivory: #F3E9DD;
+    --muted: #9C8873;
+    --muted-dim: #6B5A49;
+    --seam: #3A2A1C;
+    --good: #7FA86B;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color: transparent;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    background: var(--bg-deep);
+    color: var(--ivory);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    overscroll-behavior: none;
+    user-select: none;
+  }
+  #app{
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    background:
+      radial-gradient(ellipse 600px 300px at 50% -10%, rgba(201,122,59,0.14), transparent 60%),
+      var(--bg-deep);
+  }
+
+  /* ---------- Header ---------- */
+  .topbar{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 16px 18px 8px;
+  }
+  .who{ display:flex; align-items:center; gap:10px; }
+  .avatar{
+    width:38px; height:38px; border-radius:10px;
+    background: linear-gradient(155deg, var(--copper-bright), #8A4E22);
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:15px; color:#1B140F;
+    flex-shrink:0;
+  }
+  .who-text{ line-height:1.25; }
+  .who-name{ font-size:14px; font-weight:600; color:var(--ivory); }
+  .who-tier{ font-size:11.5px; color:var(--muted); }
+  .rank-pill{
+    font-size:11.5px; color:var(--amber);
+    border:1px solid var(--seam); background:var(--bg-panel);
+    padding:6px 10px; border-radius:8px;
+  }
+
+  /* ---------- Balance / rate ---------- */
+  .balance-wrap{ text-align:center; padding: 8px 20px 4px; }
+  .balance-label{ font-size:12px; color: var(--muted); }
+  .balance-value{
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size:44px; font-weight:600;
+    color: var(--ivory);
+    line-height:1.1; margin-top:2px;
+    font-variant-numeric: tabular-nums;
+  }
+  .balance-value .unit{
+    font-size:19px; color: var(--copper-bright); margin-left:6px; font-family:'Inter',sans-serif; font-weight:600;
+  }
+
+  .rate-card{
+    margin: 14px 18px 4px;
+    background: var(--bg-panel);
+    border: 1px solid var(--seam);
+    border-radius: 14px;
+    padding: 16px 18px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .rate-main .rate-figure{
+    font-size:26px; font-weight:700; color: var(--amber);
+    font-variant-numeric: tabular-nums;
+  }
+  .rate-main .rate-caption{ font-size:12px; color: var(--muted); margin-top:2px; }
+  .rate-boost-tag{
+    font-size:11.5px; color: var(--good);
+    background: rgba(127,168,107,0.12);
+    border: 1px solid rgba(127,168,107,0.4);
+    padding: 5px 9px; border-radius: 7px;
+    white-space:nowrap;
+  }
+  .rate-boost-tag.none{
+    color: var(--muted); background: transparent; border-color: var(--seam);
+  }
+
+  .pulse-wrap{
+    margin: 12px 18px 6px;
+    height: 46px;
+    display:flex; align-items:flex-end; gap:3px;
+    padding: 0 2px;
+  }
+  .pulse-bar{
+    flex:1;
+    background: linear-gradient(180deg, var(--copper-bright), #6B3C1D);
+    border-radius: 2px 2px 0 0;
+    animation: pulseBar 1.8s ease-in-out infinite;
+    opacity: 0.85;
+  }
+  @keyframes pulseBar{
+    0%, 100% { transform: scaleY(0.35); }
+    50% { transform: scaleY(1); }
+  }
+
+  /* ---------- Tabs ---------- */
+  .tabbar{
+    display:flex; gap:6px;
+    padding: 6px 16px 0;
+    border-bottom: 1px solid var(--seam);
+    margin-top: 8px;
+  }
+  .tab{
+    flex:1; text-align:center; padding: 12px 0 11px;
+    font-size:13.5px; color:var(--muted);
+    border-bottom: 2px solid transparent;
+    background:none; border-top:none; border-left:none; border-right:none;
+    font-family:inherit; cursor:pointer;
+  }
+  .tab.active{ color: var(--ivory); border-bottom-color: var(--copper-bright); font-weight:600; }
+
+  .panel{ padding: 14px 16px 26px; display:none; }
+  .panel.active{ display:block; }
+
+  /* ---------- Upgrade / boost cards ---------- */
+  .upgrade-card{
+    display:flex; align-items:center; gap:12px;
+    background: var(--bg-panel); border:1px solid var(--seam); border-radius: 12px;
+    padding: 12px 14px; margin-bottom: 10px;
+  }
+  .upgrade-icon{
+    width:42px; height:42px; border-radius:9px;
+    background: var(--bg-panel-raised);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .upgrade-mid{ flex:1; min-width:0; }
+  .upgrade-name{ font-size:14px; font-weight:600; color:var(--ivory); }
+  .upgrade-desc{ font-size:12px; color:var(--muted); margin-top:2px; }
+  .upgrade-level{ font-size:11.5px; color:var(--copper-bright); margin-top:3px; }
+  .upgrade-btn{
+    flex-shrink:0; background: var(--bg-panel-raised); border:1px solid var(--seam);
+    color: var(--ivory); border-radius:9px; padding: 9px 12px;
+    font-size:12.5px; font-weight:600; font-family:inherit; cursor:pointer;
+    text-align:center; min-width: 74px;
+  }
+  .upgrade-btn .cost{ color: var(--amber); display:block; font-size:12.5px; }
+  .upgrade-btn:disabled{ opacity:0.45; }
+  .upgrade-btn.affordable{ border-color: var(--copper-bright); }
+
+  /* ---------- Boost tab ---------- */
+  .boost-hero{
+    background: var(--bg-panel); border:1px solid var(--seam); border-radius:14px;
+    padding: 18px; margin-bottom: 14px; text-align:center;
+  }
+  .boost-hero h3{ margin:0 0 6px; font-size:15px; color:var(--ivory); font-weight:600; }
+  .boost-hero p{ margin:0 0 14px; font-size:12.5px; color:var(--muted); line-height:1.5; }
+  .connect-btn{
+    background: linear-gradient(135deg, var(--copper-bright), #A65A24);
+    color: #1B140F; border:none; border-radius:11px;
+    padding: 12px 20px; font-size:14px; font-weight:700;
+    font-family:inherit; cursor:pointer; width:100%;
+  }
+  .wallet-row{
+    display:flex; align-items:center; justify-content:space-between;
+    background: var(--bg-panel-raised); border:1px solid var(--seam); border-radius:12px;
+    padding: 12px 14px; margin-bottom: 12px;
+  }
+  .wallet-addr{ font-size:13px; color: var(--ivory); font-variant-numeric: tabular-nums; }
+  .wallet-sub{ font-size:11.5px; color: var(--muted); margin-top:2px; }
+  .disconnect-btn{
+    background:none; border:1px solid var(--seam); color:var(--muted);
+    border-radius:8px; padding:7px 10px; font-size:11.5px; font-family:inherit; cursor:pointer;
+  }
+  .held-figure{ text-align:center; margin: 6px 0 16px; }
+  .held-figure .n{ font-size:28px; font-weight:700; color:var(--amber); font-variant-numeric: tabular-nums; }
+  .held-figure .u{ font-size:12.5px; color:var(--muted); margin-top:2px; }
+
+  .tier-row{ display:flex; align-items:center; gap:12px; padding: 12px 4px; border-bottom: 1px solid var(--seam); }
+  .tier-row:last-child{ border-bottom:none; }
+  .tier-dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0; background: var(--seam); border: 1px solid var(--muted-dim); }
+  .tier-dot.reached{ background: var(--good); border-color: var(--good); }
+  .tier-mid{ flex:1; }
+  .tier-name{ font-size:13.5px; color: var(--ivory); }
+  .tier-need{ font-size:11.5px; color: var(--muted); margin-top:1px; }
+  .tier-mult{ font-size:13px; font-weight:700; color: var(--amber); }
+  .refresh-line{ text-align:center; font-size:11.5px; color: var(--muted-dim); margin-top:8px; }
+
+  .task-card{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background: var(--bg-panel); border:1px solid var(--seam); border-radius:12px;
+    padding: 13px 14px; margin-bottom:10px;
+  }
+  .task-text{ font-size:13.5px; color:var(--ivory); }
+  .task-reward{ font-size:12px; color:var(--muted); margin-top:2px; }
+  .task-btn{
+    background: var(--bg-panel-raised); border:1px solid var(--seam); color: var(--amber);
+    border-radius:8px; padding:8px 12px; font-size:12px; font-weight:600;
+    font-family:inherit; cursor:pointer; flex-shrink:0;
+  }
+  .task-btn.done{ color: var(--good); border-color: var(--good); opacity:0.7; }
+
+  .rank-row{ display:flex; align-items:center; gap:12px; padding:11px 4px; border-bottom:1px solid var(--seam); font-size:13.5px; }
+  .rank-num{ width:22px; color:var(--muted); font-weight:600; font-size:13px; }
+  .rank-name{ flex:1; color:var(--ivory); }
+  .rank-amt{ color:var(--amber); font-weight:600; font-variant-numeric: tabular-nums; }
+  .rank-row.me{ background: rgba(201,122,59,0.08); border-radius:8px; }
+
+  .footnote{ text-align:center; font-size:11px; color: var(--muted-dim); padding: 10px 20px 18px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="topbar">
+    <div class="who">
+      <div class="avatar" id="avatarInitial">T</div>
+      <div class="who-text">
+        <div class="who-name" id="userName">Miner</div>
+        <div class="who-tier" id="userTier">Tier 1 &middot; Surface rig</div>
+      </div>
+    </div>
+    <div class="rank-pill" id="rankPill">#&mdash;</div>
+  </div>
+
+  <div class="balance-wrap">
+    <div class="balance-label">Your vault</div>
+    <div class="balance-value"><span id="balanceNum">0</span><span class="unit">TAN</span></div>
+  </div>
+
+  <div class="rate-card">
+    <div class="rate-main">
+      <div class="rate-figure" id="rateFigure">0.00 TAN/hr</div>
+      <div class="rate-caption">Mining continuously, even while you're away</div>
+    </div>
+    <div class="rate-boost-tag none" id="boostTag">No boost</div>
+  </div>
+
+  <div class="pulse-wrap" id="pulseWrap"></div>
+
+  <div class="tabbar">
+    <button class="tab active" data-tab="upgrades">Rig</button>
+    <button class="tab" data-tab="boost">Boost</button>
+    <button class="tab" data-tab="tasks">Tasks</button>
+    <button class="tab" data-tab="leaders">Leaders</button>
+  </div>
+
+  <div class="panel active" id="panel-upgrades">
+    <div id="upgradeList"></div>
+  </div>
+
+  <div class="panel" id="panel-boost">
+    <div id="boostContent"></div>
+  </div>
+
+  <div class="panel" id="panel-tasks">
+    <div id="taskList"></div>
+  </div>
+
+  <div class="panel" id="panel-leaders">
+    <div id="leaderList"></div>
+  </div>
+
+  <div class="footnote">TAN is an in-app mining point. Boost tiers are based on your connected wallet's on-chain TAN token balance.</div>
+</div>
+
+<script>
+(function(){
+  const tg = window.Telegram ? window.Telegram.WebApp : null;
+  if(tg){ tg.ready(); tg.expand(); if(tg.setHeaderColor) try{tg.setHeaderColor('#1B140F');}catch(e){} }
+
+  // ============================================================
+  // CONFIG — fill these in before you deploy
+  // ============================================================
+  const CONFIG = {
+    // Must be hosted on the SAME domain as this app, HTTPS required.
+    // See the tonconnect-manifest.json template provided alongside this file.
+    TONCONNECT_MANIFEST_URL: 'https://YOUR-DOMAIN.com/tonconnect-manifest.json',
+
+    // Your TAN jetton's MASTER contract address (raw or friendly form), e.g. 'EQC...'
+    JETTON_MASTER_ADDRESS: 'EQAm7g9TfpInfWprTLjRSL4PZGm9UpOq05NuoakjzuUYw4V1',
+
+    JETTON_DECIMALS: 9, // most TON jettons use 9 — confirm with your token's contract
+
+    TONAPI_BASE: 'https://tonapi.io/v2',
+
+    // Holding tiers: minTokens = TAN tokens held in wallet, multiplier applied to base mining rate
+    BOOST_TIERS: [
+      { minTokens: 1000,     multiplier: 1.10, label: 'Bronze holder' },
+      { minTokens: 5000,     multiplier: 1.25, label: 'Silver holder' },
+      { minTokens: 20000,    multiplier: 1.50, label: 'Gold holder' },
+      { minTokens: 75000,    multiplier: 2.00, label: 'Platinum holder' },
+      { minTokens: 250000,   multiplier: 3.00, label: 'Diamond holder' },
+      { minTokens: 750000,   multiplier: 4.00, label: 'Vault holder' },
+      { minTokens: 2000000,  multiplier: 5.00, label: 'Whale holder' }
+    ],
+
+    BALANCE_RECHECK_MS: 60000 // how often to re-poll wallet balance while connected
+  };
+  // ============================================================
+
+  const STORAGE_KEY = 'tanminer_state_v2';
+  const now = () => Date.now();
+
+  const defaultState = {
+    balance: 0,
+    lastTick: now(),
+    rigLevel: 1,      // base TAN/hr rig upgrades
+    refineryLevel: 0, // % multiplier upgrades
+    tasksDone: {},
+    userName: 'Miner',
+    walletAddress: null,
+    walletTokenBalance: 0
+  };
+
+  let state = JSON.parse(JSON.stringify(defaultState));
+
+  const RIG_BASE_RATE = 12; // TAN/hr per rig level
+
+  const UPGRADES = [
+    {
+      key: 'rigLevel',
+      name: 'Add a rig',
+      icon: 'rig',
+      desc: (lvl) => `Base rate: ${(lvl * RIG_BASE_RATE).toFixed(0)} TAN/hr`,
+      baseCost: 150,
+      costMul: 1.7
+    },
+    {
+      key: 'refineryLevel',
+      name: 'Upgrade refinery',
+      icon: 'flask',
+      desc: (lvl) => `+${lvl * 5}% total rate`,
+      baseCost: 220,
+      costMul: 1.8
+    }
+  ];
+
+  const TASKS = [
+    { key: 'connect_wallet', text: 'Connect your TON wallet', reward: 150 },
+    { key: 'join_channel', text: 'Join the TAN Miner announcement channel', reward: 200 },
+    { key: 'invite_friend', text: 'Invite one friend to start mining', reward: 300 }
+  ];
+
+  function upgradeCost(u){
+    return Math.round(u.baseCost * Math.pow(u.costMul, state[u.key]));
+  }
+
+  function baseRatePerHour(){
+    const rig = state.rigLevel * RIG_BASE_RATE;
+    const refineryMul = 1 + state.refineryLevel * 0.05;
+    return rig * refineryMul;
+  }
+
+  function currentBoostTier(){
+    let best = null;
+    for(const t of CONFIG.BOOST_TIERS){
+      if(state.walletTokenBalance >= t.minTokens) best = t;
+    }
+    return best;
+  }
+
+  function boostMultiplier(){
+    const tier = currentBoostTier();
+    return tier ? tier.multiplier : 1;
+  }
+
+  function effectiveRatePerHour(){
+    return baseRatePerHour() * boostMultiplier();
+  }
+
+  function fmt(n){ return Math.floor(n).toLocaleString('en-US'); }
+  function fmt2(n){ return n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+  function saveState(){
+    const payload = JSON.stringify(state);
+    if(tg && tg.CloudStorage){ tg.CloudStorage.setItem(STORAGE_KEY, payload, ()=>{}); }
+  }
+
+  function loadState(cb){
+    if(tg && tg.CloudStorage){
+      tg.CloudStorage.getItem(STORAGE_KEY, (err, value)=>{
+        if(!err && value){
+          try{ state = Object.assign({}, defaultState, JSON.parse(value)); }catch(e){}
+        }
+        cb();
+      });
+    } else { cb(); }
+  }
+
+  function applyOfflineProgress(){
+    const elapsedMs = now() - (state.lastTick || now());
+    const elapsedHours = Math.max(0, elapsedMs / 3600000);
+    const earned = elapsedHours * effectiveRatePerHour();
+    if(earned > 0.001) state.balance += earned;
+    state.lastTick = now();
+  }
+
+  // ---------- DOM refs ----------
+  const balanceNum = document.getElementById('balanceNum');
+  const rateFigure = document.getElementById('rateFigure');
+  const boostTag = document.getElementById('boostTag');
+  const userNameEl = document.getElementById('userName');
+  const avatarInitial = document.getElementById('avatarInitial');
+  const userTierEl = document.getElementById('userTier');
+
+  function tierLabel(){
+    const total = state.rigLevel + state.refineryLevel;
+    if(total < 4) return 'Tier 1 &middot; Surface rig';
+    if(total < 9) return 'Tier 2 &middot; Deep shaft';
+    if(total < 15) return 'Tier 3 &middot; Bedrock vein';
+    return 'Tier 4 &middot; Molten core';
+  }
+
+  function render(){
+    balanceNum.textContent = fmt2(state.balance);
+    rateFigure.textContent = fmt2(effectiveRatePerHour()) + ' TAN/hr';
+    userTierEl.innerHTML = tierLabel();
+
+    const tier = currentBoostTier();
+    if(tier){
+      boostTag.textContent = tier.label + ' \u00b7 x' + tier.multiplier.toFixed(2);
+      boostTag.classList.remove('none');
+    } else {
+      boostTag.textContent = state.walletAddress ? 'No tier yet' : 'No boost';
+      boostTag.classList.add('none');
+    }
+
+    renderUpgrades();
+    renderBoost();
+    renderTasks();
+  }
+
+  function renderUpgrades(){
+    const list = document.getElementById('upgradeList');
+    list.innerHTML = '';
+    UPGRADES.forEach(u=>{
+      const cost = upgradeCost(u);
+      const affordable = state.balance >= cost;
+      const lvl = state[u.key];
+      const card = document.createElement('div');
+      card.className = 'upgrade-card';
+      card.innerHTML = `
+        <div class="upgrade-icon">${iconSvg(u.icon)}</div>
+        <div class="upgrade-mid">
+          <div class="upgrade-name">${u.name}</div>
+          <div class="upgrade-desc">${u.desc(lvl)}</div>
+          <div class="upgrade-level">Level ${lvl}</div>
+        </div>
+        <button class="upgrade-btn ${affordable ? 'affordable' : ''}" data-key="${u.key}">
+          Upgrade
+          <span class="cost">${fmt(cost)} TAN</span>
+        </button>
+      `;
+      list.appendChild(card);
+    });
+    list.querySelectorAll('.upgrade-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=> buyUpgrade(btn.dataset.key));
+    });
+  }
+
+  function buyUpgrade(key){
+    const u = UPGRADES.find(x=>x.key===key);
+    const cost = upgradeCost(u);
+    if(state.balance < cost) return;
+    state.balance -= cost;
+    state[key] += 1;
+    saveState();
+    render();
+  }
+
+  function renderTasks(){
+    const list = document.getElementById('taskList');
+    list.innerHTML = '';
+    TASKS.forEach(t=>{
+      let done = !!state.tasksDone[t.key];
+      const card = document.createElement('div');
+      card.className = 'task-card';
+      card.innerHTML = `
+        <div>
+          <div class="task-text">${t.text}</div>
+          <div class="task-reward">+${fmt(t.reward)} TAN</div>
+        </div>
+        <button class="task-btn ${done ? 'done' : ''}" data-key="${t.key}">${done ? 'Claimed' : 'Claim'}</button>
+      `;
+      list.appendChild(card);
+    });
+    list.querySelectorAll('.task-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const key = btn.dataset.key;
+        if(state.tasksDone[key]) return;
+        if(key === 'connect_wallet' && !state.walletAddress){ connectWallet(); return; }
+        const t = TASKS.find(x=>x.key===key);
+        state.tasksDone[key] = true;
+        state.balance += t.reward;
+        saveState();
+        render();
+      });
+    });
+  }
+
+  function renderLeaders(){
+    const list = document.getElementById('leaderList');
+    const rows = [
+      { name: 'Copperhead', amt: 48210 },
+      { name: 'Vein_Runner', amt: 39875 },
+      { name: 'DustyBoots', amt: 28110 },
+      { name: state.userName + ' (you)', amt: state.balance, me: true },
+      { name: 'Slagheap', amt: 9040 }
+    ].sort((a,b)=> b.amt - a.amt);
+    list.innerHTML = rows.map((r,i)=>`
+      <div class="rank-row ${r.me ? 'me' : ''}">
+        <div class="rank-num">${i+1}</div>
+        <div class="rank-name">${r.name}</div>
+        <div class="rank-amt">${fmt(r.amt)}</div>
+      </div>
+    `).join('');
+  }
+
+  function renderBoost(){
+    const el = document.getElementById('boostContent');
+    if(!state.walletAddress){
+      el.innerHTML = `
+        <div class="boost-hero">
+          <h3>Boost your mining rate</h3>
+          <p>Connect a TON wallet — Tonkeeper and others all work — and hold TAN tokens to permanently multiply your TAN/hr. The more you hold, the higher your tier.</p>
+          <button class="connect-btn" id="connectBtn">Connect wallet</button>
+        </div>
+        ${tiersHtml()}
+      `;
+      document.getElementById('connectBtn').addEventListener('click', connectWallet);
+    } else {
+      const short = state.walletAddress.slice(0,6) + '&hellip;' + state.walletAddress.slice(-4);
+      el.innerHTML = `
+        <div class="wallet-row">
+          <div>
+            <div class="wallet-addr">${short}</div>
+            <div class="wallet-sub">Connected wallet</div>
+          </div>
+          <button class="disconnect-btn" id="disconnectBtn">Disconnect</button>
+        </div>
+        <div class="held-figure">
+          <div class="n">${fmt(state.walletTokenBalance)}</div>
+          <div class="u">TAN held on-chain</div>
+        </div>
+        ${tiersHtml()}
+        <div class="refresh-line">Balance rechecks automatically every minute</div>
+      `;
+      document.getElementById('disconnectBtn').addEventListener('click', disconnectWallet);
+    }
+  }
+
+  function tiersHtml(){
+    const held = state.walletTokenBalance;
+    return `
+      <div class="boost-hero" style="text-align:left; padding-top:6px;">
+        <h3 style="margin-bottom:10px;">Holding tiers</h3>
+        ${CONFIG.BOOST_TIERS.map(t=>{
+          const reached = held >= t.minTokens;
+          return `
+            <div class="tier-row">
+              <div class="tier-dot ${reached ? 'reached' : ''}"></div>
+              <div class="tier-mid">
+                <div class="tier-name">${t.label}</div>
+                <div class="tier-need">Hold ${fmt(t.minTokens)}+ TAN</div>
+              </div>
+              <div class="tier-mult">x${t.multiplier.toFixed(2)}</div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  function iconSvg(kind){
+    if(kind === 'rig'){
+      return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="4" y="9" width="16" height="10" rx="1.5" stroke="#F2A65A" stroke-width="2"/><path d="M8 9V6a2 2 0 012-2h4a2 2 0 012 2v3" stroke="#F2A65A" stroke-width="2"/><path d="M8 13h.01M12 13h.01M16 13h.01" stroke="#F2A65A" stroke-width="2" stroke-linecap="round"/></svg>`;
+    }
+    return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M9 2v6L4 19a2 2 0 002 3h12a2 2 0 002-3l-5-11V2" stroke="#F2A65A" stroke-width="2" stroke-linejoin="round"/><path d="M7 15h10" stroke="#F2A65A" stroke-width="2"/></svg>`;
+  }
+
+  // ---------- Passive tick ----------
+  let lastFrame = now();
+  setInterval(()=>{
+    const nowT = now();
+    const elapsedMs = nowT - lastFrame;
+    lastFrame = nowT;
+    const earned = (effectiveRatePerHour() / 3600000) * elapsedMs;
+    if(earned > 0) state.balance += earned;
+    state.lastTick = nowT;
+    render();
+  }, 1000);
+
+  setInterval(saveState, 5000);
+
+  function buildPulseBars(){
+    const wrap = document.getElementById('pulseWrap');
+    wrap.innerHTML = '';
+    const count = 28;
+    for(let i=0;i<count;i++){
+      const bar = document.createElement('div');
+      bar.className = 'pulse-bar';
+      bar.style.animationDelay = (Math.random() * 1.8).toFixed(2) + 's';
+      wrap.appendChild(bar);
+    }
+  }
+
+  // ---------- Tabs ----------
+  document.querySelectorAll('.tab').forEach(tab=>{
+    tab.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('panel-' + tab.dataset.tab).classList.add('active');
+      if(tab.dataset.tab === 'leaders') renderLeaders();
+    });
+  });
+
+  // ============================================================
+  // TON Connect + jetton balance lookup
+  // ============================================================
+  let tonConnectUI = null;
+  let balancePollTimer = null;
+
+  function initTonConnect(){
+    if(!window.TON_CONNECT_UI){ return; }
+    tonConnectUI = new window.TON_CONNECT_UI.TonConnectUI({
+      manifestUrl: CONFIG.TONCONNECT_MANIFEST_URL
+    });
+
+    tonConnectUI.onStatusChange((wallet)=>{
+      if(wallet && wallet.account){
+        state.walletAddress = wallet.account.address;
+        if(!state.tasksDone.connect_wallet){
+          state.tasksDone.connect_wallet = true;
+          state.balance += (TASKS.find(t=>t.key==='connect_wallet') || {reward:0}).reward;
+        }
+        refreshTokenBalance();
+        startBalancePolling();
+      } else {
+        state.walletAddress = null;
+        state.walletTokenBalance = 0;
+        stopBalancePolling();
+        render();
+        saveState();
+      }
+    });
+  }
+
+  function connectWallet(){
+    if(!tonConnectUI){ initTonConnect(); }
+    if(tonConnectUI){ tonConnectUI.openModal(); }
+  }
+
+  function disconnectWallet(){
+    if(tonConnectUI){ tonConnectUI.disconnect(); }
+    state.walletAddress = null;
+    state.walletTokenBalance = 0;
+    stopBalancePolling();
+    saveState();
+    render();
+  }
+
+  async function refreshTokenBalance(){
+    if(!state.walletAddress) return;
+    try{
+      const url = `${CONFIG.TONAPI_BASE}/accounts/${state.walletAddress}/jettons/${CONFIG.JETTON_MASTER_ADDRESS}`;
+      const res = await fetch(url);
+      if(!res.ok){ throw new Error('tonapi request failed: ' + res.status); }
+      const data = await res.json();
+      const raw = Number(data.balance || 0);
+      state.walletTokenBalance = raw / Math.pow(10, CONFIG.JETTON_DECIMALS);
+    }catch(e){
+      // Wallet may simply hold zero of this jetton, or the lookup failed — treat as zero
+      state.walletTokenBalance = 0;
+      console.warn('Could not fetch TAN jetton balance', e);
+    }
+    saveState();
+    render();
+  }
+
+  function startBalancePolling(){
+    stopBalancePolling();
+    balancePollTimer = setInterval(refreshTokenBalance, CONFIG.BALANCE_RECHECK_MS);
+  }
+  function stopBalancePolling(){
+    if(balancePollTimer){ clearInterval(balancePollTimer); balancePollTimer = null; }
+  }
+
+  // ---------- Init ----------
+  function initUserFromTelegram(){
+    if(tg && tg.initDataUnsafe && tg.initDataUnsafe.user){
+      const u = tg.initDataUnsafe.user;
+      state.userName = u.first_name || u.username || 'Miner';
+      userNameEl.textContent = state.userName;
+      avatarInitial.textContent = (state.userName[0] || 'T').toUpperCase();
+    }
+  }
+
+  loadState(()=>{
+    applyOfflineProgress();
+    initUserFromTelegram();
+    buildPulseBars();
+    render();
+    saveState();
+    initTonConnect();
+    if(state.walletAddress){ refreshTokenBalance(); startBalancePolling(); }
+  });
+
+})();
+</script>
+</body>
+</html>
