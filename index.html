@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <title>TAN Miner</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: system-ui, sans-serif;
+      background: linear-gradient(180deg, #f6d365 0%, #c9a227 50%, #8a6a12 100%);
+      color: #3b2a00;
+    }
+    .app {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+    .top {
+      flex: 0 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 12px 8px;
+    }
+    .pill, .wallet-btn {
+      background: rgba(255,255,255,.4);
+      border: 1px solid rgba(120,80,0,.25);
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 12px;
+      color: #3b2a00;
+    }
+    .content {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      padding: 8px 16px 16px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .page { display: none; }
+    .page.active { display: block; }
+    .coin {
+      width: 140px;
+      height: 140px;
+      margin: 12px auto 10px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #fff6c8, #e0b
