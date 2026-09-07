@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>TAN Miner</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: system-ui, sans-serif;
+      background:
+        radial-gradient(circle at 50% 0%, #fff3b0 0%, transparent 45%),
+        linear-gradient(180deg, #f6d365 0%, #c9a227 45%, #8a6a12 100%);
+      color: #3b2a00;
+      min-height: 100vh;
+      text-align: center;
+      padding: 16px;
+    }
+    .top { display:flex; justify-content:space-between; align-items:center; }
+    .wallet {
+      background: rgba(255,255,255,.35);
+      border: 1px solid rgba(120,80,0,.25);
+      color: #3b2a00;
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-weight: 700;
+    }
+    .coin {
+      width: 180px; height: 180px; margin: 28px auto;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #fff6c8, #e0b000 55%, #b8860b);
+      display:grid; place-items:center;
+      font-size: 42px; font-weight: 800; color: #5a3e00;
+      box-shadow: 0 12px 40px rgba(120,80,0,.35), inset 0 8px 18px rgba(255,255,255,.45);
+      user-select: none;
+    }
+    .pending { font-size: 28px; color: #1b6b2a; margin: 8px 0; font-weight: 800; }
+    .meta { opacity:.9; font-size:14px; }
+    button.main {
+      width: 100%; max-width: 360px; margin: 10px auto; display:block;
+      background: linear-gradient(180deg, #ffe082, #d4a017);
+      color:#3b2a00; border:0; font-weight:800;
+      padding: 16px; border-radius: 16px; font-size: 18px;
+      box-shadow: 0 8px 18px rgba(120,80,0,.25
