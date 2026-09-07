@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Miner Mini App</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root { --bg:#0b1220; --card:#121a2b; --gold:#f5c542; --text:#e8eefc; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: system-ui, sans-serif;
+      background: radial-gradient(circle at 50% 20%, #1a2744, var(--bg));
+      color: var(--text); min-height: 100vh; text-align: center;
+      padding: 16px;
+    }
+    .top { display:flex; justify-content:space-between; align-items:center; }
+    .wallet { background:#1e2a44; border:0; color:#fff; padding:8px 12px; border-radius:999px; }
+    .coin {
+      width: 180px; height: 180px; margin: 28px auto;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #ffe9a0, #d4a017);
+      display:grid; place-items:center; font-size: 42px; font-weight: 800;
+      box-shadow: 0 0 40px rgba(245,197,66,.35);
+      user-select: none;
+    }
+    .pending { font-size: 28px; color: #7CFF9A; margin: 8px 0; }
+    .meta { opacity:.8; font-size:14px; }
+    button.main {
+      width: 100%; max-width: 360px; margin: 10px auto; display:block;
+      background: var(--gold); color:#111; border:0; font-weight:800;
+      padding: 16px; border-radius: 16px; font-size: 18px;
+    }
+    button.ghost {
+      width: 100%; max-width: 360px; margin: 8px auto; display:block;
+      background:#1e2a44; color:#fff; border:0; padding:12px; border-radius:14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="top">
+    <div>Lv <span id="level">1</span> · <span id="hs">0.20</span> TH/s</div>
+    <button class="wallet" id="walletBtn">Connect Wallet</button>
+  </div>
+
+  <div class="coin" id="coin">ATF</div>
+  <div class="pending" id="pending">+0.0000</div>
+  <div class="meta">Balance: <span id="balance">0.00</span></div>
+  <div class="meta" id="status">Idle</div>
+
+  <button class="main" id="startBtn">START MINING</button>
+  <button class="ghost" id="claimBtn">CLAIM</button>
+  <button class="ghost" id="upgradeBtn">Upgrade miner</button>
+
+<script>
+  const tg = window.Telegram?.WebApp;
+  tg?.ready();
+  tg?.expand();
+
+  const LEVELS = [
+    { level: 1, hs: 0.20, cost: 0 },
+    { level: 2, hs: 0.50, cost: 50 },
+    { level: 3, hs: 1.20, cost: 200 },
+    { level: 4, hs: 3.00, cost: 800 },
+  ];
+
+  const state = JSON.parse(localStorage.getItem("miner") || "null") || {
+    balance: 0,
+    pending: 0,
+    level: 1,
+    mining: false,
+    startedAt: null,
+    lastTick: Date.now(),
+    wallet: null,
+  };
+
+  function save() { localStorage.setItem("miner", JSON.stringify(state)); }
+
+  function hs() {
+    return LEVELS.find(l => l.level === state.level)?.hs || 0.2;
+  }
+
+  function accrue() {
+    if (!state.mining || !state.startedAt) return;
+    const now = Date.now();
+    const dt = (now - state.lastTick) / 1000;
+    // tokens per second = TH/s * small rate (tune this)
+    const rate = hs() * 0.001;
+    state.pending += rate * dt;
+    state.lastTick = now;
+  }
+
+  function render() {
+    accrue();
+    document.getElementById("pending").textContent = "+" + state.pending.toFixed(4);
+    document.getElementById("balance").textContent = state.balance.toFixed(2);
+    document.getElementById("level").textContent = state.level;
+    document.getElementById("hs").textContent = hs().toFixed(2);
+    document.getElementById("status").textContent = state.mining ? "Mining..." : "Idle";
+    document.getElementById("startBtn").textContent = state.mining ? "MINING" : "START MINING";
+    document.getElementById("walletBtn").textContent = state.wallet ? "Wallet connected" : "Connect Wallet";
+    save();
+  }
+
+  document.getElementById("startBtn").onclick = () => {
+    if (state.mining) return;
+    state.mining = true;
+    state.startedAt = Date.now();
+    state.lastTick = Date.now();
+    render();
+  };
+
+  document.getElementById("claimBtn").onclick = () => {
+    accrue();
+    state.balance += state.pending;
+    state.pending = 0;
+    state.mining = false;
+    state.startedAt = null;
+    render();
+    tg?.HapticFeedback?.notificationOccurred("success");
+  };
+
+  document.getElementById("upgradeBtn").onclick = () => {
+    const next = LEVELS.find(l => l.level === state.level + 1);
+    if (!next) return alert("Max level");
+    if (state.balance < next.cost) return alert("Need " + next.cost + " tokens");
+    state.balance -= next.cost;
+    state.level = next.level;
+    render();
+  };
+
+  document.getElementById("walletBtn").onclick = () => {
+    // Placeholder: plug TonConnect UI here
+    const addr = prompt("Paste TON wallet address");
+    if (addr) state.wallet = addr;
+    render();
+  };
+
+  setInterval(render, 250);
+  render();
+</script>
+</body>
+</html>
