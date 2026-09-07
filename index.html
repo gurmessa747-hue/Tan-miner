@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TAN Miner</title>
+  <style>
+    body { margin:0; padding:20px; background:#d4a017; color:#3b2a00; font-family:Arial; text-align:center; }
+    .coin { width:100px; height:100px; line-height:100px; margin:20px auto; border-radius:50px; background:#f5d76e; font-weight:bold; font-size:28px; }
+    button { width:100%; height:48px; margin:8px 0; border:0; background:#ffe082; font-weight:bold; font-size:16px; }
+    p { margin:8px 0; }
+  </style>
+</head>
+<body>
+  <div class="coin">TAN</div>
+  <p id="pending">+0.0000 TAN</p>
+  <p>Balance: <span id="bal">0.00</span> TAN</p>
+  <p id="info">Lv 1/500 · Idle</p>
+  <button onclick="startMine()">START</button>
+  <button onclick="claim()">CLAIM</button>
+  <button onclick="upgrade()">UPGRADE</button>
+
+  <script>
+    var s = { bal:0, pend:0, lv:1, on:0, t:Date.now() };
+    try { s = JSON.parse(localStorage.getItem("tan6") || "null") || s; } catch(e) {}
+
+    function hs(){ return 0.2 * Math.pow(1.015, s.lv-1); }
+    function boost(){ return 1 + s.bal/10000; }
+    function cost(){ return Math.floor(20 * Math.pow(s.lv+1, 1.35)); }
+    function tick(){
+      if(!s.on) return;
+      var n = Date.now();
+      s.pend += hs() * 0.001 * boost() * ((n-s.t)/1000);
+      s.t = n;
+    }
+    function draw(){
+      tick();
+      document.getElementById("pending").innerHTML = "+"+s.pend.toFixed(4)+" TAN";
+      document.getElementById("bal").innerHTML = s.bal.toFixed(2);
+      document.getElementById("info").innerHTML = "Lv "+s.lv+"/500 · "+(s.on?"Mining":"Idle")+" · "+(hs()*boost()).toFixed(4)+" TH/s";
+      try { localStorage.setItem("tan6", JSON.stringify(s)); } catch(e) {}
+    }
+    function startMine(){ s.on=1; s.t=Date.now(); draw(); }
+    function claim(){ tick(); s.bal+=s.pend; s.pend=0; s.on=0; draw(); }
+    function upgrade(){
+      if(s.lv>=500){ alert("Max 500"); return; }
+      var c=cost();
+      if(s.bal<c){ alert("Need "+c+" TAN"); return; }
+      s.bal-=c; s.lv++; draw();
+    }
+    draw();
+    setInterval(draw, 500);
+  </script>
+</body>
+</html>
