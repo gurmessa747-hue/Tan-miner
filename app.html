@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TAN Miner</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body {
+      margin: 0;
+      background: #d4a017;
+      color: #3b2a00;
+      font-family: Arial, sans-serif;
+    }
+    #nav { padding: 8px; }
+    #nav button {
+      width: 32%;
+      height: 40px;
+      font-weight: bold;
+      border: 0;
+      background: #ffe082;
+    }
+    #box { padding: 12px; }
+    .coin {
+      width: 100px;
+      height: 100px;
+      margin: 10px auto;
+      background: #f5d76e;
+      border-radius: 50px;
+      text-align: center;
+      line-height: 100px;
+      font-size: 28px;
+      font-weight: bold;
+    }
+    p { text-align: center; margin: 8px 0; }
+    #box button {
+      width: 100%;
+      height: 44px;
+      margin-top: 8px;
+      border: 0;
+      background: #ffe082;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div id="nav">
+    <button onclick="go('mine')">Mine</button>
+    <button onclick="go('tasks')">Tasks</button>
+    <button onclick="go('friends')">Friends</button>
+  </div>
+  <div id="box"></div>
+
+<script>
+  var BOT = "TANMINER_BOT";
+  var tg = window.Telegram && window.Telegram.WebApp;
+  if (tg) { tg.ready(); tg.expand(); }
+
+  var state = JSON.parse(localStorage.getItem("tan-v5") || "null") || {
+    balance: 0, pending: 0, level: 1, mining: false, last: Date.now(),
+    wallet: "", tasks: {}, page: "mine"
+  };
+
+  function save() { localStorage.setItem("tan-v5", JSON.stringify(state)); }
+  function hs() { return 0.2 * Math.pow(1.015, state.level - 1); }
+  function cost() { return Math.floor(20 * Math.pow(state.level + 1, 1.35)); }
+  function boost() { return 1 + state.balance / 10000; }
+  function uid() {
+    return (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) || "local";
+  }
+  function tick() {
+    if (!state.mining) return;
+    var now = Date.now();
+    state.pending += hs() * 0.001 * boost() * ((now - state.last) / 1000);
+    state.last = now;
+  }
+
+  function go(page) {
+    state.page = page;
+    draw();
+  }
+
+  function startMine() {
+    state.mining = true;
+    state.last = Date.now();
+    draw();
+  }
+  function claim() {
+    tick();
+    state.balance += state.pending;
+    state.pending = 0;
+    state.mining = false;
+    draw();
+  }
+  function upgrade() {
+    var c = cost();
+    if (state.level >= 500) return alert("Max 500");
+    if (state.balance < c) return alert("Need " + c + " TAN");
+    state.balance -= c;
+    state.level += 1;
+    draw();
+  }
+  function wallet() {
+    var a = prompt("TON wallet");
+    if (a) state.wallet = a;
+    draw();
+  }
+  function doTask(id, reward) {
+    if (state.tasks[id]) return;
+    state.tasks[id] = 1;
+    state.balance += reward;
+    draw();
+  }
+
+  function draw() {
+    tick();
+    var b = document.getElementById("box");
+    if (state.page === "mine") {
+      b.innerHTML =
+        '<div class="coin">TAN</div>' +
+        "<p>+" + state.pending.toFixed(4) + " TAN</p>" +
+        "<p>Balance: " + state.balance.toFixed(2) + " TAN</p>" +
+        "<p>Lv " + state.level + "/500 · " + (hs() * boost()).toFixed(4) + " TH/s</p>" +
+        "<p>Boost x" + boost().toFixed(2) + " · " + (state.mining ? "Mining" : "Idle") + "</p>" +
+        '<button onclick="startMine()">START TAN MINING</button>' +
+        '<button onclick="claim()">CLAIM TAN</button>' +
+        '<button onclick="upgrade()">UPGRADE</button>' +
+        '<button onclick="wallet()">' + (state.wallet ? "Wallet OK" : "Connect Wallet") + "</button>";
+    } else if (state.page === "tasks") {
+      b.innerHTML =
+        '<p>Tasks</p>' +
+        '<button onclick="doTask(\'tg\',25)">Join channel +25</button>' +
+        '<button onclick="doTask(\'x\',25)">Follow X +25</button>' +
+        '<button onclick="doTask(\'share\',15)">Share link +15</button>' +
+        '<button onclick="doTask(\'wal\',40)">Connect wallet +40</button>';
+    } else {
+      b.innerHTML =
+        "<p>Invite</p><p>https://t.me/" + BOT + "?startapp=ref_" + uid() + "</p>";
+    }
+    save();
+  }
+
+  var start = tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param;
+  if (start && start.indexOf("ref_") === 0 && !localStorage.getItem("tan-ref-used")) {
+    localStorage.setItem("tan-ref-used", start);
+    state.balance += 10;
+  }
+
+  draw();
+  setInterval(function () { if (state.page === "mine") draw(); }, 500);
+</script>
+</body>
+</html>
