@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TAN Miner</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    body { margin:0; background:#d4a017; color:#3b2a00; font-family:Arial; }
+    #nav { padding:8px; text-align:center; }
+    #nav button { width:31%; height:40px; border:0; background:#ffe082; font-weight:bold; }
+    #box { padding:14px; text-align:center; }
+    .coin { width:100px; height:100px; line-height:100px; margin:12px auto; border-radius:50px; background:#f5d76e; font-size:28px; font-weight:bold; }
+    #box button { width:100%; height:46px; margin:6px 0; border:0; background:#ffe082; font-weight:bold; }
+    p { margin:6px 0; }
+  </style>
+</head>
+<body>
+  <div id="nav">
+    <button onclick="go('mine')">Mine</button>
+    <button onclick="go('tasks')">Tasks</button>
+    <button onclick="go('friends')">Friends</button>
+  </div>
+  <div id="box">Loading...</div>
+
+<script>
+  var KEY = "tan_save_v8";
+  var BOT = "TANMINER_BOT";
+  var JETTON = "EQAm7g9TfpInfWprTLjRSL4PZGm9UpOq05NuoakjzuUYw4V1";
+  var MAX = 500;
+  var page = "mine";
+  var ready = false;
+  var tg = window.Telegram && window.Telegram.WebApp;
+  if (tg) { try { tg.ready(); tg.expand(); } catch(e) {} }
+
+  var s = { bal:0, pend:0, lv:1, on:0, t:Date.now(), wallet:"", chain:0, tasks:{} };
+
+  function uid() {
+    try { return String(tg.initDataUnsafe.user.id); } catch(e) { return "local"; }
+  }
+  function hs(){ return 0.2 * Math.pow(1.015, s.lv-1); }
+  function cost(){ return Math.floor(20 * Math.pow(s.lv+1, 1.35)); }
+  function boost(){ return 1 + ((Number(s.bal)||0)+(Number(s.chain)||0))/10000; }
+
+  function tick(){
+    if (!s.on) return;
+    var n = Date.now();
+    s.pend += hs() * 0.001 * boost() * ((n - s.t) / 1000);
+    s.t = n;
+  }
+
+  function persist() {
+    var raw = JSON.stringify(s);
+    try { localStorage.setItem(KEY, raw); } catch(e) {}
+    try {
+      if (tg && tg.CloudStorage && tg.CloudStorage.setItem) {
+        tg.CloudStorage.setItem(KEY, raw, function(){});
+      }
+    } catch(e) {}
+  }
+
+  function loadLocal() {
+    try {
+      var x = JSON.parse(localStorage.getItem(KEY) || "null");
+      if (x && typeof x.bal === "number") s = x;
+    } catch(e) {}
+  }
+
+  function loadCloud(done) {
+    if (!(tg && tg.CloudStorage && tg.CloudStorage.getItem)) return done();
+    try {
+      tg.CloudStorage.getItem(KEY, function(err, val) {
+        if (!err && val) {
+          try {
+            var x = JSON.parse(val);
+            if (x && typeof x.bal === "number") {
+              if (!s.bal || x.bal >= s.bal) s = x;
+            }
+          } catch(e) {}
+        }
+        done();
+      });
+    } catch(e) { done(); }
+  }
+
+  function go(p){ page = p; draw(); }
+
+  function startMine(){ s.on = 1; s.t = Date.now(); persist(); draw(); }
+  function claim(){
+    tick();
+    s.bal = Number(s.bal) + Number(s.pend);
+    s.pend = 0;
+    s.on = 0;
+    persist();
+    draw();
+    alert("Saved: " + s.bal.toFixed(4) + " TAN");
+  }
+  function upgrade(){
+    if (s.lv >= MAX) return alert("Max 500");
+    var c = cost();
+    if (s.bal < c) return alert("Need " + c + " TAN");
+    s.bal -= c; s.lv += 1;
+    persist(); draw();
+  }
+  function task(id, reward){
+    s.tasks = s.tasks || {};
+    if (s.tasks[id]) return alert("Already claimed");
+    if (id === "wal" && !s.wallet) return alert("Paste wallet first");
+    s.tasks[id] = 1;
+    s.bal += reward;
+    persist(); draw();
+  }
+  function pasteWallet(){
+    var a = prompt("Paste TON wallet");
+    if (!a) return;
+    s.wallet = a;
+    persist();
+    loadChain();
+    draw();
+  }
+  function copyRef(){
+    var link = "https://t.me/"+BOT+"?startapp=ref_"+uid();
+    try { navigator.clipboard.writeText(link); } catch(e) {}
+    alert(link);
+  }
+  function loadChain(){
+    if (!s.wallet) return;
+    fetch("https://tonapi.io/v2/accounts/"+encodeURIComponent(s.wallet)+"/jettons/"+JETTON)
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .then(function(d){
+        if (!d) return;
+        var dec = (d.jetton && d.jetton.decimals != null) ? Number(d.jetton.decimals) : 9;
+        s.chain = Number(d.balance || 0) / Math.pow(10, dec);
+        persist();
+        if (page === "mine") draw();
+      }).catch(function(){});
+  }
+
+  function draw(){
+    if (!ready) return;
+    tick();
+    var b = document.getElementById("box");
+    if (page === "mine") {
+      b.innerHTML =
+        '<div class="coin">TAN</div>' +
+        "<p>+" + Number(s.pend).toFixed(4) + " TAN</p>" +
+        "<p>Balance: " + Number(s.bal).toFixed(4) + " TAN</p>" +
+        "<p>Wallet TAN: " + Number(s.chain
