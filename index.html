@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Tan Miner</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+  <style>
+    :root {
+      --bg:#07060a; --surface:#16120c; --text:#f7e7c1; --muted:#b7a27a;
+      --accent:#f5b942; --btn-text:#1a1408; --line:#3a2c16; --good:#3dff8b;
+      --blue:#1e7dff;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      font-family:system-ui,-apple-system,Segoe UI,sans-serif;
+      color:var(--text);min-height:100vh;
+      background:
+        radial-gradient(900px 420px at 50% 118%, rgba(245,185,66,.18), transparent 60%),
+        radial-gradient(700px 380px at 50% -8%, rgba(90,60,10,.45), transparent 55%),
+        linear-gradient(#120e08,#07060a 40%,#050407);
+      padding:calc(10px + env(safe-area-inset-top)) 14px calc(112px + env(safe-area-inset-bottom));
+    }
+    body:before{
+      content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+      background-image:
+        radial-gradient(1.4px 1.4px at 12% 22%, #f5d68a 40%, transparent 50%),
+        radial-gradient(1px 1px at 80% 18%, #ffe7a8 40%, transparent 50%),
+        radial-gradient(1.2px 1.2px at 30% 70%, #d4b36a 40%, transparent 50%),
+        radial-gradient(1px 1px at 70% 62%, #fff3c8 40%, transparent 50%),
+        radial-gradient(1px 1px at 48% 40%, #c9a35a 40%, transparent 50%);
+      opacity:.55;
+    }
+    header, .page, .tabs{position:relative;z-index:1}
+    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    .brand{font-weight:900;letter-spacing:.08em;font-size:14px}
+    #tc-btn{transform:scale(.82);transform-origin:right center;min-height:32px}
+    .card{background:rgba(18,14,10,.82);border:1px solid var(--line);border-radius:16px;padding:12px;margin-top:8px}
+    .label{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+    .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    button.act{border:0;border-radius:12px;padding:10px 12px;font-weight:800;background:var(--accent);color:var(--btn-text);white-space:nowrap}
+    button.act:disabled{opacity:.45}
+    .muted{color:var(--muted);font-size:12px}
+    .hidden{display:none!important}
+    .me{color:var(--accent)}
+    .page h2{margin:4px 0 8px;font-size:20px}
+    .tabs{
+      position:fixed;left:0;right:0;bottom:0;z-index:9999;
+      display:grid;grid-template-columns:repeat(6,1fr);gap:3px;
+      padding:8px 4px max(14px, env(safe-area-inset-bottom));
+      background:#07060a;border-top:1px solid var(--line);
+    }
+    .tabs button{border:0;border-radius:12px;padding:10px 1px;background:transparent;color:#8a7a5c;font-weight:800;font-size:10px}
+    .tabs button.on{background:var(--accent);color:var(--btn-text)}
+    .list .row{padding:10px 0;border-bottom:1px solid var(--line)}
+    #refLink{margin:10px 0;word-break:break-all;font-size:13px}
+    .mine-hero{text-align:center;padding-top:6px}
+    .ready-row{display:flex;justify-content:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+    .chip{border-radius:999px;padding:6px 10px;font-size:11px;font-weight:800;background:#14110c;border:1px solid #3c3018}
+    .chip.good{color:#3dff8b;border-color:#1f6a3d}
+    .chip.warn{color:#f5c518;border-color:#6a5410}
+    .assets-kicker{letter-spacing:.28em;font-size:11px;color:#cbb48a;margin-top:8px}
+    .assets-val{font-size:34px;font-weight:900;margin:6px 0 10px;color:#fff6d8}
+    .assets-val span{color:#f5b942;font-size:18px}
+    .pill-box{display:inline-block;min-width:72%;border-radius:999px;padding:8px 14px;margin:5px 0;background:rgba(20,16,10,.75);border:1px solid #4a3a1c;font-size:12px;font-weight:800}
+    .earn-box{display:inline-block;min-width:58%;margin:12px 0 8px;padding:10px 18px;border-radius:16px;background:linear-gradient(#0d1c12,#08140d);border:1px solid #1e6a3a;color:#3dff8b;font-size:34px;font-weight:900}
+    .coin-stage{position:relative;height:250px;margin:4px auto 8px;max-width:320px}
+    .coin-glow{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);width:180px;height:70px;border-radius:50%;background:radial-gradient(circle,rgba(245,185,66,.55),transparent 70%);filter:blur(6px)}
+    .coin{position:absolute;left:50%;top:18px;transform:translateX(-50%);width:176px;height:176px;border-radius:50%;background:radial-gradient(circle at 35% 28%, #fff3b0, #f0c34a 38%, #b07a12 70%, #6a4708 100%);box-shadow:0 18px 40px rgba(0,0,0,.45), inset 0 0 0 10px rgba(176,122,18,.35);display:grid;place-items:center}
+    .coin b{font-size:42px;letter-spacing:.04em;color:#2b1c05;text-shadow:0 1px 0 #ffe9a4}
+    .help{position:absolute;left:8px;bottom:18px;width:42px;height:42px;border-radius:50%;border:1px solid #4a3a1c;background:#16120c;color:#f5e2b0;font-weight:900;font-size:20px}
+    .claim-big{width:100%;border:0;border-radius:18px;padding:16px;font-size:20px;font-weight:900;background:linear-gradient(#ffd24a,#f0a307);color:#2a1a05;box-shadow:0 8px 24px rgba(245,185,66,.28)}
+    .claim-big:disabled{opacity:.45}
+    .store-title{text-align:center;font-size:26px;font-weight:900;margin-top:2px}
+    .store-sub{text-align:center;color:var(--muted);font-size:12px;margin:6px 0 10px}
+    .journey{background:linear-gradient(180deg,#1a140c,#0d0b08);border:1px solid #3a2c16;border-radius:18px;padding:14px}
+    .journey-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+    .peak-pill{background:#3a1830;color:#ff7aa2;border-radius:999px;padding:6px 10px;font-size:11px;font-weight:800;white-space:nowrap}
+    .journey h3{font-size:11px;letter-spacing:.08em;color:#cbb48a;text-transform:uppercase}
+    .journey .lvl{font-size:20px;font-weight:900;margin-top:4px}
+    .pnl{margin-top:8px;font-size:13px;color:#b7a27a}
+    .pnl b{color:var(--good)}
+    .spark{width:100%;height:64px;margin-top:8px;display:block}
+    .chart-link{display:flex;justify-content:space-between;align-items:center;margin-top:8px;color:var(--good);font-size:12px;font-weight:800}
+    .pager{display:flex;gap:8px;margin-top:8px}
+    .pager button{flex:1}
+    .miners{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+    .miner{background:linear-gradient(180deg,#16120c,#0c0a08);border:1px solid #3a2c16;border-radius:18px;padding:12px 10px 10px;min-height:168px;display:flex;flex-direction:column}
+    .miner.active{border-color:#3dff8b;box-shadow:0 0 18px rgba(61,255,139,.12)}
+    .miner.next{border-color:#f5b942}
+    .miner .mlvl{font-size:11px;color:#cbb48a;font-weight:800}
+    .pay-wrap{flex:1;display:grid;place-items:center;padding:8px 0}
+    .pay{width:100%;border-radius:16px;padding:14px 8px;text-align:center;background:radial-gradient(circle at 50% 30%,rgba(61,255,139,.16),rgba(0,0,0,.2));border:1px solid rgba(61,255,139,.18)}
+    .pay b{display:block;font-size:26px;line-height:1;color:#4dffb2;font-weight:900}
+    .pay span{color:#8b98a8;font-size:16px}
+    .speed{display:flex;justify-content:space-between;font-size:11px;color:#b7a27a;margin:8px 2px}
+    .speed b{color:#f7e7c1}
+    .mbtn{border:0;border-radius:12px;padding:11px 8px;font-weight:900;width:100%;font-size:12px}
+    .mbtn.on{background:#22c55e;color:#05210f}
+    .mbtn.need{background:#f5c518;color:#1a1408}
+    .mbtn.lock{background:#16120c;color:#8a7a5c;min-height:44px;display:grid;place-items:center;font-size:16px}
+    .need-sub{display:block;font-size:10px;font-weight:800;margin-top:3px;opacity:.85}
+    .seg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin:8px 0}
+    .seg button{border:1px solid var(--line);background:#14110c;color:#cbb48a;border-radius:12px;padding:10px 8px;font-weight:800}
+    .seg button.on{background:var(--accent);color:var(--btn-text);border-color:var(--accent)}
+    .board-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
+    .board-left{display:flex;align-items:center;gap:10px;min-width:0}
+    .rank-badge{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-size:11px;font-weight:900;background:#1b160f;color:#d7c39a}
+    .rank-badge.g{background:#7a5b12;color:#ffe7a0}
+    .rank-badge.s{background:#3d4450;color:#e8eef7}
+    .rank-badge.b{background:#5a3a1c;color:#ffd0a6}
+    .avatar-sm{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:12px;background:#2a2114;color:#f5d68a}
+    .who{min-width:0}
+    .who b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .who span{display:block;font-size:11px;color:var(--muted)}
+    .phead{margin:4px 0 6px}
+    .phead h2{font-size:28px;font-weight:900;color:#fff}
+    .phead p{color:#9aa6b4;font-size:13px;line-height:1.4;margin-top:4px}
+    .pcard{background:linear-gradient(180deg,#1a2230,#121820);border:1px solid #2a3545;border-radius:20px;padding:14px;margin-top:10px}
+    .userline{display:flex;align-items:center;gap:10px}
+    .avatar{width:46px;height:46px;border-radius:50%;background:#0e1116;display:grid;place-items:center;overflow:hidden;flex:0 0 46px}
+    .avatar img{width:100%;height:100%;object-fit:cover}
+    .avatar b{color:#f5b942;font-size:18px}
+    .uname{flex:1;min-width:0}
+    .uname b{display:block;font-size:18px;color:#fff}
+    .uname span{color:#9aa6b4;font-size:13px}
+    .idpill{border:1px solid #334155;color:#cbd5e1;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:700;background:#0f141c;white-space:nowrap}
+    .connect-bar{margin-top:12px;width:100%;border:0;border-radius:14px;padding:14px 16px;background:#1e7dff;color:#fff;font-weight:800;font-size:16px;display:flex;justify-content:space-between;align-items:center}
+    .asset-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #243040}
+    .asset-row:last-child{border-bottom:0}
+    .asset-ico{width:42px;height:42px;border-radius:12px;background:#0f141c;display:grid;place-items:center;font-size:20px;flex:0 0 42px}
+    .asset-txt{flex:1;min-width:0}
+    .asset-txt b{display:block;color:#fff;font-size:15px}
+    .asset-txt span{color:#7f8b99;font-size:12px}
+    .asset-txt .usd{color:#3dff8b;font-weight:800}
+    .asset-val{font-weight:900;color:#fff;font-size:16px;white-space:nowrap}
+    .acc-head{width:100%;border:0;background:transparent;color:#fff;display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:16px;padding:4px 0}
+    .acc-body{padding-top:10px}
+    .acc-body input{width:100%;margin:8px 0;border-radius:12px;border:1px solid #334155;background:#0f141c;color:#fff;padding:12px;font-size:14px}
+    .hist-item{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid #243040;font-size:12px;color:#cbd5e1}
+    .friend-row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
+    .friend-row:last-child{border-bottom:0}
+    .friend-profit{color:var(--good);font-weight:900;white-space:nowrap}
+    .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+    .stat{background:#14110c;border:1px solid var(--line);border-radius:14px;padding:10px}
+    .stat b{display:block;font-size:18px;margin-top:4px}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">TAN MINER</div>
+    <div id="tc-btn" class="hidden"></div>
+  </header>
+
+  <section id="page-mine" class="page">
+    <div class="mine-hero">
+      <div class="ready-row">
+        <div class="chip good" id="readyChip">● READY</div>
+        <div class="chip warn" id="lvlLeft">0 TAN left to Lvl UP</div>
+      </div>
+      <div class="assets-kicker">ASSETS</div>
+      <div class="assets-val" id="assetsVal">0.00000000 <span>TAN</span></div>
+      <div class="pill-box" id="holdPill">HOLDING WALLET: 0 TAN</div>
+      <div class="pill-box" id="poolPill">POOL WALLET: 0 TAN</div>
+      <div class="earn-box" id="earnBox">+0.00000000</div>
+      <div class="coin-stage">
+        <div class="coin-glow"></div>
+        <div class="coin" id="core"><b>TAN</b></div>
+        <button class="help" id="helpBtn">?</button>
+      </div>
+      <button class="claim-big" id="claimBtnMine">CLAIM</button>
+      <p class="muted" id="claimNoteMine" style="margin-top:8px">Connect wallet, then watch an ad to claim</p>
+      <p class="muted" id="status"></p>
+      <p class="muted" id="offlineNote"></p>
+      <p class="muted" id="todayNote"></p>
+      <p class="muted" id="rateLine"></p>
+    </div>
+  </section>
+
+  <section id="page-tasks" class="page hidden">
+    <h2>Tasks</h2>
+    <div class="card row"><div><div class="label">Daily chest</div><div class="muted" id="chestNote">+15 TAN once per day</div></div><button class="act" id="chestBtn">Open</button></div>
+    <div class="card row"><div><div class="label">Join @Tanolaminer</div><div class="muted" id="chanNote">Open, then Check to claim +15 TAN</div></div><button class="act" id="chanBtn">Open</button></div>
+    <div class="card row"><div><div class="label">Join community</div><div class="muted" id="groupNote">Open, then Check to claim +15 TAN</div></div><button class="act" id="groupBtn">Open</button></div>
+    <div class="card row">
+      <div>
+        <div class="label">Watch ad</div>
+        <div class="muted" id="taskAdNote">+15 TAN and 2x boost · 20/day</div>
+      </div>
+      <button class="act" id="taskAdBtn">Watch</button>
+    </div>
+    <div class="card row">
+      <div>
+        <div class="label">Ad boost</div>
+        <div class="muted" id="adStatus">Watch ad · 2x / 15 min</div>
+      </div>
+      <button class="act" id="adBtn">Boost</button>
+    </div>
+    <div class="card row"><div><div class="label">Connect wallet</div><div class="muted" id="taskWallet">+15 TAN · required to claim</div></div></div>
+    <div class="card row"><div><div class="label">Invite a miner</div><div class="muted">+100 TAN per real referral · friend +10% hashrate</div></div><button class="act" id="taskRefBtn">Invite</button></div>
+  </section>
+
+  <section id="page-boost" class="page hidden">
+    <div class="store-title">Miner Store</div>
+    <div class="store-sub">Levels 1–1000. Auto-unlocks from miniapp TAN + on-chain TAN.</div>
+    <div class="journey">
+      <div class="journey-top">
+        <div><h3>My level journey</h3><div class="lvl" id="journeyLvl">Level 1 / 1000</div></div>
+        <div class="peak-pill" id="peakPill">Peak 1</div>
+      </div>
+      <div class="pnl">Today's P&L <b id="todayPnl">+0 TAN</b></div>
+      <svg class="spark" id="spark" viewBox="0 0 300 64" preserveAspectRatio="none"></svg>
+      <div class="chart-link"><span>Holdings</span><span id="holdTotal">0 TAN</span></div>
+    </div>
+    <div class="card row"><div><div class="label">Holdings used for unlocks</div><div class="muted" id="holdBreakdown">Miniapp 0 + Chain 0</div></div></div>
+    <div class="pager">
+      <button class="act" id="prevMiners">Prev</button>
+      <button class="act" id="nextMiners">Next</button>
+    </div>
+    <p class="muted" id="pageNote" style="margin-top:8px;text-align:center"></p>
+    <div class="miners" id="minerGrid"></div>
+  </section>
+
+  <section id="page-invite" class="page hidden">
+    <h2>Invite</h2>
+    <div class="card">
+      <div class="label">Your invite link</div>
+      <p id="refLink">https://t.me/Tanminer_bot/app</p>
+      <div class="row"><button class="act" id="copyBtn">Copy link</button><button class="act" id="refBtn">Share</button></div>
+      <p class="muted" id="refStatus" style="margin-top:8px">+100 TAN only when a new miner opens your link.</p>
+    </div>
+    <div class="stat-grid">
+      <div class="stat"><div class="label">Friends</div><b id="refCountVal">0</b></div>
+      <div class="stat"><div class="label">Profit from invites</div><b id="refProfitVal">+0 TAN</b></div>
+    </div>
+    <div class="card">
+      <div class="label">Invited friends</div>
+      <div id="friendList" style="margin-top:6px"></div>
+    </div>
+    <div class="card"><div class="label">How it works</div><p class="muted" style="margin-top:8px">Share your link. You earn +100 TAN per real new miner who opens it. That friend gets +10% hashrate. Sharing alone does not pay.</p></div>
+  </section>
+
+  <section id="page-leaders" class="page hidden">
+    <h2>Leaderboard</h2>
+    <div class="seg">
+      <button class="on" data-board="daily">Daily</button>
+      <button data-board="weekly">Weekly</button>
+      <button data-board="all">All-time</button>
+    </div>
+    <div class="card"><p class="muted" id="boardGate"></p><p class="muted" id="myRank"></p></div>
+    <div class="card list" id="board"></div>
+  </section>
+
+  <section id="page-profile" class="page hidden">
+    <div class="phead">
+      <h2>Profile & Wallet</h2>
+      <p>Manage your account details, track your asset balances, and request on-chain TAN withdrawals.</p>
+    </div>
+    <div class="pcard">
+      <div class="userline">
+        <div class="avatar" id="profAvatar"><b>T</b></div>
+        <div class="uname">
+          <b id="profName">Miner</b>
+          <span id="tgUsername">No username</span>
+        </div>
+        <button class="idpill" id="copyIdBtn">ID: —</button>
+      </div>
+      <button class="connect-bar" id="connectBar"><span id="connectBarText">Connect Wallet</span><span>↗</span></button>
+    </div>
+    <div class="pcard">
+      <div class="asset-row">
+        <div class="asset-ico">👜</div>
+        <div class="asset-txt">
+          <b>Total Assets</b>
+          <span class="usd" id="usdVal">~$0.00 USD</span>
+        </div>
+        <div class="asset-val" id="totalAssets">0 TAN</div>
+      </div>
+      <div class="asset-row">
+        <div class="asset-ico">🧊</div>
+        <div class="asset-txt">
+          <b>Holding Wallet</b>
+          <span>Crypto Wallet</span>
+        </div>
+        <div class="asset-val" id="holdAmt">0 TAN</div>
+      </div>
+      <div class="asset-row">
+        <div class="asset-ico">🪨</div>
+        <div class="asset-txt">
+          <b>Mining Wallet</b>
+          <span>Mined Balance</span>
+        </div>
+        <div class="asset-val" id="mineAmt">0 TAN</div>
+      </div>
+    </div>
+    <div class="pcard">
+      <button class="acc-head" id="wdToggle"><span>🏧 Withdraw TAN</span><span id="wdCaret">⌄</span></button>
+      <div class="acc-body hidden" id="wdBody">
+        <p class="muted" id="wdNote">Min 1,000 claimed</p>
+        <input id="wdAmt" type="number" min="1000" step="1" placeholder="Amount" />
+        <button class="act" id="wdBtn" style="width:100%">Request withdraw</button>
+      </div>
+    </div>
+    <div class="pcard">
+      <button class="acc-head" id="histToggle"><span>🔖 Withdrawal History</span><span id="histCaret">⌄</span></button>
+      <div class="acc-body hidden" id="histBody"></div>
+    </div>
+    <p class="muted" id="lifeNote" style="margin-top:10px"></p>
+  </section>
+
+  <nav class="tabs">
+    <button class="on" data-tab="mine">Mine</button>
+    <button data-tab="tasks">Tasks</button>
+    <button data-tab="boost">Miners</button>
+    <button data-tab="invite">Friends</button>
+    <button data-tab="leaders">Board</button>
+    <button data-tab="profile">Profile</button>
+  </nav>
+
+<script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+<script>
+const CONFIG = {
+  APP_URL: "https://tan-miner.vercel.app",
+  MANIFEST_URL: "https://tan-miner.vercel.app/tonconnect-manifest.json",
+  BOT_LINK: "https://t.me/Tanminer_bot/app",
+  CHANNEL_LINK: "https://t.me/Tanolaminer",
+  GROUP_LINK: "https://t.me/Tanminercommunity",
+  ADSGRAM_BLOCK_ID: "47693",
+  TAN_MASTER: "EQAm7g9TfpInfWprTLjRSL4PZGm9UpOq05NuoakjzuUYw4V1",
+  TAN_DECIMALS: 9,
+  MIN_WITHDRAW: 1000,
+  MIN_CLAIM: 0.0001,
+  AD_MS: 15 * 60 * 1000,
+  ALLOW_AD_SIMULATION: false,
+  TASK_REWARD: 15,
+  REFERRAL_REWARD: 100,
+  BASE_HASH: 0.0001,
+  RIG_STEP: 0.0000001,
+  OFFLINE_CAP_HOURS: 8,
+  MAX_MINER_LEVEL: 1000,
+  AD_TASK_DAILY_LIMIT: 20,
+  STORE_PAGE_SIZE: 8,
+  USD_PER_TAN: 0.0015,
+  REF_API: ""
+};
+
+const tg = window.Telegram && window.Telegram.WebApp;
+const user = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
+const myId = String((user && user.id) || "guest");
+const tgUsername = (user && user.username) ? "@"+user.username : "No username";
+const tgName = (user && ((user.first_name||"") + (user.last_name ? " "+user.last_name : ""))) || (user && user.username) || "Miner";
+const tgPhoto = (user && user.photo_url) || "";
+try { tg && tg.ready(); tg && tg.expand(); } catch(e) {}
+try {
+  tg && tg.setHeaderColor && tg.setHeaderColor("#07060a");
+  tg && tg.setBackgroundColor && tg.setBackgroundColor("#07060a");
+} catch(e) {}
+try { if (tg && tg.MainButton) { tg.MainButton.hide(); tg.MainButton.offClick && tg.MainButton.offClick(); } } catch(e) {}
+
+const KEY = "tan-miner-final-v1";
+const REF_BOX = "tan-miner-ref-box-v1";
+const PAGES = ["mine","tasks","boost","invite","leaders","profile"];
+const state = load();
+let wallet = null, ads = null, lastTick = Date.now(), claiming = false, adBusy = false;
+let storePage = 0, storeTouched = false, lastSave = 0, boardMode = "daily", tonUI = null;
+
+function today(){ return new Date().toISOString().slice(0,10); }
+function minerNeed(lvl){ if(lvl<=1) return 0; return Math.floor((lvl-1)*(lvl-1)*1.5); }
+function minerHash(lvl){ return CONFIG.BASE_HASH + CONFIG.RIG_STEP * Math.max(0, lvl-1); }
+function minerUsd(lvl){ return (0.01 + (lvl-1)*0.002).toFixed(3); }
+function totalHold(){ return (Number(state.tan)||0) + (Number(state.claimed)||0) + (Number(state.tanHeld)||0); }
+function poolBal(){ return (Number(state.tan)||0) + (Number(state.claimed)||0); }
+function unlockedLevel(hold){
+  let lo=1, hi=CONFIG.MAX_MINER_LEVEL, ans=1;
+  while(lo<=hi){
+    const mid=(lo+hi)>>1;
+    if(hold>=minerNeed(mid)){ ans=mid; lo=mid+1; }
+    else hi=mid-1;
+  }
+  return ans;
+}
+function syncMinerLevel(){
+  const unlocked=unlockedLevel(totalHold());
+  state.rigLevel=Math.max(0, unlocked-1);
+  state.peakLevel=Math.max(state.peakLevel||1, unlocked);
+  return unlocked;
+}
+function resetAdDay(){
+  if(state.adTaskDate!==today()){ state.adTaskDate=today(); state.adTaskCount=0; }
+}
+function adLeft(){ resetAdDay(); return Math.max(0, CONFIG.AD_TASK_DAILY_LIMIT-(state.adTaskCount||0)); }
+function base(){
+  return {
+    tan:0, claimed:0, last:Date.now(), on:true,
+    adBoostUntil:0, tanHeld:0, streak:0, lastChest:"",
+    referredBy:"", refBoost:false, invites:0, paidRefs:[], refList:[],
+    openedChannel:false, joinedChannel:false, openedGroup:false, joinedGroup:false,
+    rigLevel:0, peakLevel:1, todayKey:"", todayMined:0, lifetime:0,
+    walletTaskPaid:false, inviteTaskPaid:false,
+    adTaskDate:"", adTaskCount:0,
+    pnl:[0,0,0,0,0,0,0,0,0,0,0,0], name: tgName
+  };
+}
+function load(){ try { return Object.assign(base(), JSON.parse(localStorage.getItem(KEY)||"{}")); } catch(e){ return base(); } }
+function persistLocal(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} }
+function save(force){
+  persistLocal();
+  const now=Date.now();
+  if(!force && now-lastSave<15000) return;
+  lastSave=now;
+  try { if (tg && tg.CloudStorage && tg.CloudStorage.setItem) tg.CloudStorage.setItem(KEY, JSON.stringify(state), function(){}); } catch(e){}
+}
+function numMax(a,b){ return Math.max(Number(a)||0, Number(b)||0); }
+function hydrateCloud(){
+  try {
+    if (tg && tg.CloudStorage && tg.CloudStorage.getItem) {
+      tg.CloudStorage.getItem(KEY, function(err, val){
+        if (err || !val) return;
+        try {
+          const remote = JSON.parse(val);
+          if (!remote || typeof remote!=="object") return;
+          state.tan = numMax(state.tan, remote.tan);
+          state.claimed = numMax(state.claimed, remote.claimed);
+          state.lifetime = numMax(state.lifetime, remote.lifetime);
+          state.todayMined = numMax(state.todayMined, remote.todayMined);
+          state.invites = numMax(state.invites, remote.invites);
+          state.peakLevel = numMax(state.peakLevel, remote.peakLevel);
+          state.rigLevel = numMax(state.rigLevel, remote.rigLevel);
+          state.adBoostUntil = numMax(state.adBoostUntil, remote.adBoostUntil);
+          state.walletTaskPaid = !!(state.walletTaskPaid || remote.walletTaskPaid);
+          state.joinedChannel = !!(state.joinedChannel || remote.joinedChannel);
+          state.joinedGroup = !!(state.joinedGroup || remote.joinedGroup);
+          state.openedChannel = !!(state.openedChannel || remote.openedChannel);
+          state.openedGroup = !!(state.openedGroup || remote.openedGroup);
+          state.refBoost = !!(state.refBoost || remote.refBoost);
+          if (remote.referredBy && !state.referredBy) state.referredBy = remote.referredBy;
+          if (Array.isArray(remote.paidRefs)) state.paidRefs = Array.from(new Set((state.paidRefs||[]).concat(remote.paidRefs)));
+          if (Array.isArray(remote.refList) && remote.refList.length>(state.refList||[]).length) state.refList=remote.refList;
+          persistLocal(); render();
+        } catch(e){}
+      });
+    }
+  } catch(e){}
+}
+function fmt(n){ return Math.floor(Number(n)||0).toLocaleString(); }
+function fmtDec(n, d){ return (Number(n)||0).toFixed(d == null ? 8 : d); }
+function left(ms){ const s=Math.max(0,Math.ceil(ms/1000)); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); }
+function inviteLink(){ return CONFIG.BOT_LINK + "?startapp=ref" + encodeURIComponent(myId); }
+function alertTan(msg){ try { if(tg && tg.showAlert) tg.showAlert(msg); else alert(msg); } catch(e){ alert(msg); } }
+function confirmTan(msg, cb){
+  try { if(tg && tg.showConfirm){ tg.showConfirm(msg, function(ok){ if(ok) cb(); }); return; } } catch(e){}
+  if(window.confirm(msg)) cb();
+}
+function openTg(url){ try { if(tg && tg.openTelegramLink) tg.openTelegramLink(url); else window.open(url,"_blank"); } catch(e){ window.open(url,"_blank"); } }
+function readRefBox(){ try { return JSON.parse(localStorage.getItem(REF_BOX)||"{}"); } catch(e){ return {}; } }
+function writeRefBox(box){ try { localStorage.setItem(REF_BOX, JSON.stringify(box)); } catch(e){} }
+function registerReferral(referrerId, newUserId){
+  if(!referrerId || !newUserId || referrerId===newUserId) return;
+  const box=readRefBox();
+  const list=Array.isArray(box[referrerId]) ? box[referrerId] : [];
+  const exists=list.some(function(x){ return (typeof x==="string" ? x : x.id)===newUserId; });
+  if(exists) return;
+  list.push({id:newUserId, at:Date.now(), reward:CONFIG.REFERRAL_REWARD});
+  box[referrerId]=list;
+  writeRefBox(box);
+  if(CONFIG.REF_API){
+    try { fetch(CONFIG.REF_API, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({referrerId:referrerId, userId:newUserId})}); } catch(e){}
+  }
+}
+function collectReferralRewards(){
+  const box=readRefBox();
+  const mine=Array.isArray(box[myId]) ? box[myId] : [];
+  if(!state.paidRefs) state.paidRefs=[];
+  if(!state.refList) state.refList=[];
+  let added=0;
+  mine.forEach(function(item){
+    const id=typeof item==="string" ? item : item.id;
+    if(id && id!==myId && state.paidRefs.indexOf(id)<0){
+      state.paidRefs.push(id);
+      state.tan += CONFIG.REFERRAL_REWARD;
+      state.invites = (state.invites||0)+1;
+      state.refList.unshift({
+        id:id,
+        at: (item && item.at) || Date.now(),
+        reward: CONFIG.REFERRAL_REWARD
+      });
+      added++;
+    }
+  });
+  if(added) alertTan("+"+(added*CONFIG.REFERRAL_REWARD)+" TAN from "+added+" real referral"+(added>1?"s":""));
+}
+function applyReferral(){
+  const p = (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || "";
+  if(p.indexOf("ref")===0 && p.slice(3) && p.slice(3)!==myId && !state.referredBy){
+    state.referredBy=p.slice(3);
+    state.refBoost=true;
+    registerReferral(state.referredBy, myId);
+  } else if(state.referredBy){
+    registerReferral(state.referredBy, myId);
+  }
+  collectReferralRewards();
+}
+function multipliers(){ const ad=Date.now()<state.adBoostUntil?2:1; const ref=state.refBoost?1.1:1; return {ad:ad,ref:ref,total:ad*ref}; }
+function hashrate(){ syncMinerLevel(); return minerHash((state.rigLevel||0)+1) * multipliers().total; }
+function rollToday(earned){ if(state.todayKey!==today()){ state.todayKey=today(); state.todayMined=0; } state.todayMined+=earned; state.lifetime+=earned; }
+function credit(sec){ if(!state.on||sec<=0) return 0; const earned=hashrate()*sec; state.tan+=earned; rollToday(earned); return earned; }
+function settleOffline(){
+  const now=Date.now();
+  const gone=Math.max(0,(now-(state.last||now))/1000);
+  const cap=CONFIG.OFFLINE_CAP_HOURS*3600;
+  const used=Math.min(gone,cap);
+  const earned=credit(used);
+  state.last=now; lastTick=now;
+  setText("offlineNote", earned>0?("Offline +"+fmtDec(earned)+" TAN"+(gone>cap?" (8h cap)":"")):"");
+}
+function setText(id, v){ const el=document.getElementById(id); if(el) el.textContent=v; }
+function canClaim(){ return !!(wallet && state.tan>=CONFIG.MIN_CLAIM && !claiming); }
+function hideBlueClaim(){
+  try { if (tg && tg.MainButton) tg.MainButton.hide(); } catch(e){}
+}
+function renderJoinTask(btnId, noteId, opened, joined, label){
+  const btn=document.getElementById(btnId);
+  if(joined){ if(btn){ btn.textContent="Done"; btn.disabled=true; } setText(noteId, "Completed · +"+CONFIG.TASK_REWARD+" TAN"); }
+  else if(opened){ if(btn){ btn.textContent="Check"; btn.disabled=false; } setText(noteId, "Come back and Check after joining "+label); }
+  else { if(btn){ btn.textContent="Open"; btn.disabled=false; } setText(noteId, "Open "+label+", then Check to claim +"+CONFIG.TASK_REWARD+" TAN"); }
+}
+function drawSpark(){
+  const svg=document.getElementById("spark"); if(!svg) return;
+  const pts=state.pnl && state.pnl.length ? state.pnl.slice() : [0,0,0,0,0,0,0,0,0,0,0,state.todayMined||0];
+  if(pts.length<2) pts.push(pts[0]||0);
+  const max=Math.max(0.0000001, Math.max.apply(null, pts));
+  const w=300,h=64;
+  const d=pts.map(function(v,i){ const x=i*(w/(pts.length-1)); const y=h-8-((v/max)*(h-16)); return (i?"L":"M")+x.toFixed(1)+","+y.toFixed(1); }).join(" ");
+  svg.innerHTML='<path d="'+d+'" fill="none" stroke="#ff4d7a" stroke-width="3" stroke-linecap="round"/>';
+}
+function maxStorePage(){ return Math.floor((CONFIG.MAX_MINER_LEVEL-1)/CONFIG.STORE_PAGE_SIZE); }
+function renderMiners(){
+  const grid=document.getElementById("minerGrid"); if(!grid) return;
+  const hold=totalHold(); const current=syncMinerLevel();
+  const start=storePage*CONFIG.STORE_PAGE_SIZE+1;
+  const end=Math.min(CONFIG.MAX_MINER_LEVEL, start+CONFIG.STORE_PAGE_SIZE-1);
+  let html="";
+  for(let lvl=start; lvl<=end; lvl++){
+    const leftAmt=Math.max(0, minerNeed(lvl)-hold);
+    const cls=lvl===current?" active":(lvl===current+1?" next":"");
+    let btn = lvl<=current ? '<button class="mbtn on">ACTIVE</button>'
+      : lvl===current+1 ? '<button class="mbtn need">NEED '+fmtDec(leftAmt,2)+' TAN<span class="need-sub">Hold more TAN to unlock</span></button>'
+      : '<div class="mbtn lock">🔒</div>';
+    html+='<div class="miner'+cls+'"><div class="mlvl">Lvl '+lvl+' / 1000</div><div class="pay-wrap"><div class="pay"><b>'+minerUsd(lvl)+'</b><span>$</span></div></div><div class="speed"><span>Speed</span><b>'+minerHash(lvl).toFixed(7)+' H/s</b></div>'+btn+'</div>';
+  }
+  grid.innerHTML=html;
+  setText("pageNote", "Showing Lvl "+start+"–"+end+" of 1000");
+  const prev=document.getElementById("prevMiners"); const next=document.getElementById("nextMiners");
+  if(prev) prev.disabled=storePage<=0;
+  if(next) next.disabled=storePage>=maxStorePage();
+}
+function paintLive(){
+  const hold=totalHold(); const current=syncMinerLevel();
+  const nextNeed=minerNeed(Math.min(CONFIG.MAX_MINER_LEVEL, current+1));
+  const av=document.getElementById("assetsVal"); if(av) av.innerHTML=fmtDec(hold)+' <span>TAN</span>';
+  setText("holdPill", "HOLDING WALLET: "+fmtDec(state.tanHeld||0,4)+" TAN");
+  setText("poolPill", "POOL WALLET: "+fmtDec(poolBal(),4)+" TAN");
+  setText("earnBox", "+"+fmtDec(state.tan||0));
+  setText("lvlLeft", current>=CONFIG.MAX_MINER_LEVEL ? "MAX LEVEL 1000" : fmtDec(Math.max(0,nextNeed-hold),2)+" TAN left to Lvl UP");
+  setText("readyChip", state.on ? "● READY" : "● PAUSED");
+  setText("rateLine", "Hashrate "+hashrate().toFixed(7)+" H/s · Lvl "+current+" / 1000");
+  setText("todayNote", "Today +"+fmtDec(state.todayMined||0)+" TAN");
+  const claimBtnMine=document.getElementById("claimBtnMine");
+  if(claimBtnMine) claimBtnMine.disabled=!canClaim();
+  setText("totalAssets", fmtDec(hold,2)+" TAN");
+  setText("holdAmt", fmtDec(state.tanHeld||0,2)+" TAN");
+  setText("mineAmt", fmtDec(poolBal(),2)+" TAN");
+  setText("usdVal", "~$"+(hold*CONFIG.USD_PER_TAN).toFixed(2)+" USD");
+  hideBlueClaim();
+}
+function renderFriends(){
+  const list=state.refList||[];
+  const profit=list.reduce(function(s,x){ return s+(Number(x.reward)||CONFIG.REFERRAL_REWARD); },0);
+  setText("refCountVal", String(list.length));
+  setText("refProfitVal", "+"+fmt(profit)+" TAN");
+  const box=document.getElementById("friendList");
+  if(!box) return;
+  if(!list.length){
+    box.innerHTML='<p class="muted">No real referrals yet. Profit appears when someone opens your link.</p>';
+    return;
+  }
+  box.innerHTML=list.map(function(f,i){
+    const when=f.at ? new Date(f.at).toLocaleString() : "";
+    return '<div class="friend-row"><div class="who"><b>Miner '+(f.id||("Friend "+(i+1)))+'</b><span>'+when+'</span></div><div class="friend-profit">+'+(f.reward||CONFIG.REFERRAL_REWARD)+' TAN</div></div>';
+  }).join("");
+}
+function renderProfileExtras(){
+  setText("profName", tgName);
+  setText("tgUsername", tgUsername);
+  setText("copyIdBtn", "ID: "+myId+" ⧉");
+  const av=document.getElementById("profAvatar");
+  if(av){
+    if(tgPhoto) av.innerHTML='<img alt="" src="'+tgPhoto+'"/>';
+    else av.innerHTML="<b>"+(tgName.charAt(0)||"T").toUpperCase()+"</b>";
+  }
+  const bar=document.getElementById("connectBarText");
+  if(bar) bar.textContent = wallet ? (wallet.slice(0,6)+"..."+wallet.slice(-4)) : "Connect Wallet";
+  const needWd=CONFIG.MIN_WITHDRAW-Math.floor(state.claimed);
+  const wdBtn=document.getElementById("wdBtn");
+  if(wdBtn) wdBtn.disabled=!(wallet&&state.claimed>=CONFIG.MIN_WITHDRAW);
+  setText("wdNote", !wallet?"Connect wallet first":(needWd>0?("Need "+needWd.toLocaleString()+" more claimed · min 1,000"):"Ready · claimed "+fmt(state.claimed)+" TAN"));
+  const hist=document.getElementById("histBody");
+  if(hist){
+    let q=[];
+    try { q=JSON.parse(localStorage.getItem("tan-withdraws")||"[]"); } catch(e){}
+    hist.innerHTML = q.length ? q.map(function(x){
+      const d=new Date(x.ts||Date.now());
+      return '<div class="hist-item"><span>'+d.toLocaleString()+'</span><span>'+fmt(x.amt)+' TAN · '+(x.status||"pending")+'</span></div>';
+    }).join("") : '<p class="muted">No withdrawals yet.</p>';
+  }
+}
+function render(){
+  resetAdDay();
+  if(!state.pnl) state.pnl=[0,0,0,0,0,0,0,0,0,0,0,0];
+  state.pnl[state.pnl.length-1]=state.todayMined||0;
+  paintLive();
+  setText("claimNoteMine", !wallet ? "Connect wallet, then watch an ad to claim from 0.0001 TAN" : (claiming ? "Watch the ad..." : "Watch an ad to claim from 0.0001 TAN"));
+  setText("status", state.on?"Auto-mining. Offline cap 8 hours.":"Miner off. Tap the coin to resume.");
+  const chestReady=state.lastChest!==today();
+  const chestBtn=document.getElementById("chestBtn"); if(chestBtn) chestBtn.disabled=!chestReady;
+  setText("chestNote", chestReady?("Ready · +"+CONFIG.TASK_REWARD+" TAN"):"Come back tomorrow");
+  renderJoinTask("chanBtn","chanNote", state.openedChannel, state.joinedChannel, "@Tanolaminer");
+  renderJoinTask("groupBtn","groupNote", state.openedGroup, state.joinedGroup, "@Tanminercommunity");
+  const adOn=Date.now()<state.adBoostUntil;
+  const leftAds=adLeft();
+  setText("adStatus", adOn?("ON · "+left(state.adBoostUntil-Date.now())):"Watch ad · 2x / 15 min");
+  setText("taskAdNote", leftAds>0?(CONFIG.TASK_REWARD+" TAN + 2x boost · "+leftAds+" / 20 left today"):"Daily limit reached (20/20)");
+  const adBtn=document.getElementById("adBtn"); if(adBtn) adBtn.disabled=adBusy || adOn || leftAds<=0;
+  const taskAdBtn=document.getElementById("taskAdBtn"); if(taskAdBtn){ taskAdBtn.disabled=adBusy || leftAds<=0; taskAdBtn.textContent=leftAds>0?"Watch":"Done"; }
+  const current=syncMinerLevel();
+  setText("journeyLvl", "Level "+current+" / 1000");
+  setText("peakPill", (state.peakLevel>current?((state.peakLevel-current)+" from peak"):("Peak "+(state.peakLevel||current))));
+  setText("todayPnl", "+"+fmtDec(state.todayMined||0)+" TAN");
+  setText("holdTotal", fmtDec(totalHold(),4)+" TAN");
+  setText("holdBreakdown", "Miniapp "+fmtDec(poolBal(),4)+" + Chain "+fmtDec(state.tanHeld||0,4));
+  drawSpark(); renderMiners(); renderProfileExtras(); renderFriends();
+  setText("refLink", inviteLink());
+  setText("refStatus", state.refBoost?"You joined via invite · +10% hashrate active":"Pay +100 TAN only when a new miner opens your link.");
+  setText("lifeNote", "Lifetime mined "+fmtDec(state.lifetime)+" TAN · claimed "+fmtDec(state.claimed,4));
+  setText("taskWallet", state.walletTaskPaid?"Done · +"+CONFIG.TASK_REWARD+" TAN":(wallet?"Done · wallet connected":"Connect wallet · +"+CONFIG.TASK_REWARD+" TAN"));
+  save(false);
+}
+function showPage(tab){
+  PAGES.forEach(function(p){ const el=document.getElementById("page-"+p); if(el) el.classList.toggle("hidden", p!==tab); });
+  document.querySelectorAll(".tabs button").forEach(function(b){ b.classList.toggle("on", b.getAttribute("data-tab")===tab); });
+  if(tab==="leaders") renderBoard();
+  if(tab==="boost"){
+    if(!storeTouched) storePage=Math.floor((syncMinerLevel()-1)/CONFIG.STORE_PAGE_SIZE);
+    renderMiners();
+  }
+  if(tab==="profile") renderProfileExtras();
+  if(tab==="invite") renderFriends();
+}
+function toggle(){ state.on=!state.on; state.last=lastTick=Date.now(); try { tg && tg.HapticFeedback && tg.HapticFeedback.impactOccurred("medium"); } catch(e){} render(); }
+function playAd(onDone, onFail){
+  if(adBusy) return;
+  adBusy=true; render();
+  const finish=function(ok, err){
+    adBusy=false;
+    if(ok){ if(onDone) onDone(); }
+    else {
+      if(CONFIG.ALLOW_AD_SIMULATION){ if(onDone) onDone(); return; }
+      if(onFail) onFail(err);
+    }
+    render();
+  };
+  if(ads && ads.show){
+    ads.show().then(function(){ finish(true); }).catch(function(err){ finish(false, err); });
+    return;
+  }
+  finish(false, {description:"AdsGram not ready"});
+}
+function claim(){
+  if(!canClaim()) return;
+  claiming=true; render();
+  playAd(function(){
+    const amt=Number(state.tan)||0;
+    if(amt<CONFIG.MIN_CLAIM){ claiming=false; render(); return; }
+    state.tan=0; state.claimed+=amt; claiming=false;
+    try { tg && tg.HapticFeedback && tg.HapticFeedback.notificationOccurred("success"); } catch(e){}
+    alertTan("Ad complete. Claimed "+fmtDec(amt)+" TAN."); render(); save(true);
+  }, function(){
+    claiming=false;
+    render();
+  });
+}
+function withdraw(){
+  if(!wallet||state.claimed<CONFIG.MIN_WITHDRAW) return;
+  const input=document.getElementById("wdAmt");
+  let amt=input && input.value ? Number(input.value) : Math.floor(state.claimed);
+  amt=Math.floor(amt);
+  if(!(amt>=CONFIG.MIN_WITHDRAW) || amt>Math.floor(state.claimed)) { alertTan("Enter an amount between 1,000 and "+fmt(state.claimed)); return; }
+  confirmTan("Withdraw "+amt.toLocaleString()+" TAN to your connected wallet?", function(){
+    state.claimed-=amt;
+    try{ const q=JSON.parse(localStorage.getItem("tan-withdraws")||"[]"); q.unshift({ts:Date.now(),amt:amt,to:wallet,jetton:CONFIG.TAN_MASTER,id:myId,status:"pending_treasury"}); localStorage.setItem("tan-withdraws", JSON.stringify(q.slice(0,50))); }catch(e){}
+    alertTan(amt.toLocaleString()+" TAN withdraw requested.\nPaid from treasury.");
+    render(); save(true);
+  });
+}
+function handleJoin(kind){
+  const openedKey = kind==="channel" ? "openedChannel" : "openedGroup";
+  const joinedKey = kind==="channel" ? "joinedChannel" : "joinedGroup";
+  const link = kind==="channel" ? CONFIG.CHANNEL_LINK : CONFIG.GROUP_LINK;
+  const label = kind==="channel" ? "@Tanolaminer" : "@Tanminercommunity";
+  if(state[joinedKey]) return;
+  if(!state[openedKey]){ openTg(link); state[openedKey]=true; alertTan("Join "+label+", then come back and tap Check."); render(); return; }
+  state[joinedKey]=true; state.tan+=CONFIG.TASK_REWARD; alertTan(label+" task complete: +"+CONFIG.TASK_REWARD+" TAN"); render(); save(true);
+}
+function openChannel(){ handleJoin("channel"); }
+function openGroup(){ handleJoin("group"); }
+function openChest(){
+  if(state.lastChest===today()) return;
+  const y=new Date(Date.now()-86400000).toISOString().slice(0,10);
+  state.streak=state.lastChest===y?state.streak+1:1; state.tan+=CONFIG.TASK_REWARD; state.lastChest=today();
+  alertTan("Day "+state.streak+" chest: +"+CONFIG.TASK_REWARD+" TAN"); render(); save(true);
+}
+function invite(){
+  const link=inviteLink();
+  try{ if(tg && tg.openTelegramLink) tg.openTelegramLink("https://t.me/share/url?url="+encodeURIComponent(link)+"&text="+encodeURIComponent("Mine TAN with me")); else copyInvite(); }catch(e){ copyInvite(); }
+}
+function copyInvite(){
+  const link=inviteLink();
+  function done(){ setText("copyBtn","Copied"); setTimeout(function(){ setText("copyBtn","Copy link"); }, 1500); }
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(link).then(done).catch(function(){ fallback(); });
+  else fallback();
+  function fallback(){ const t=document.createElement("textarea"); t.value=link; document.body.appendChild(t); t.select(); try { document.execCommand("copy"); } catch(e){} document.body.removeChild(t); done(); }
+}
+function consumeAdTask(boostOnly){
+  resetAdDay();
+  if(adBusy) return;
+  if(adLeft()<=0){ alertTan("Daily ad limit reached (20/20)."); return; }
+  if(boostOnly && Date.now()<state.adBoostUntil) return;
+  playAd(function(){
+    resetAdDay();
+    state.adTaskCount=(state.adTaskCount||0)+1;
+    state.adBoostUntil=Date.now()+CONFIG.AD_MS;
+    if(!boostOnly){
+      state.tan+=CONFIG.TASK_REWARD;
+      alertTan("Ad task: +"+CONFIG.TASK_REWARD+" TAN · "+adLeft()+" left today");
+    } else {
+      alertTan("Ad boost ON for 15 minutes");
+    }
+    save(true);
+  }, function(){});
+}
+function watchAdTask(){ consumeAdTask(false); }
+function watchAdBoost(){ consumeAdTask(true); }
+function onWallet(addr){
+  wallet=addr || null;
+  if(wallet && !state.walletTaskPaid){ state.walletTaskPaid=true; state.tan+=CONFIG.TASK_REWARD; alertTan("Wallet task: +"+CONFIG.TASK_REWARD+" TAN"); }
+  if(!wallet) state.tanHeld=0;
+  refreshHold(); renderBoard(); render(); save(true);
+}
+function refreshHold(){
+  if(!wallet){ state.tanHeld=0; paintLive(); return; }
+  fetch("https://tonapi.io/v2/accounts/"+encodeURIComponent(wallet)+"/jettons")
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      const master=CONFIG.TAN_MASTER.toLowerCase(); const list=data.balances||[]; let hit=null;
+      for(let i=0;i<list.length;i++){ const a=((list[i].jetton&&list[i].jetton.address)||"").toLowerCase(); if(a===master || a.indexOf("26ee0f53")>=0 || a.indexOf(master.slice(2,10).toLowerCase())>=0) hit=list[i]; }
+      const raw=hit?Number(hit.balance||0):0;
+      const dec=(hit&&hit.jetton&&hit.jetton.decimals!=null)?hit.jetton.decimals:CONFIG.TAN_DECIMALS;
+      state.tanHeld=raw/Math.pow(10,dec); render();
+    }).catch(function(){ render(); });
+}
+const SAMPLE=[
+  ["HashFox","@hashfox"],["RigQueen","@rigqueen"],["NonceKid","@noncekid"],["BlockDan","@blockdan"],
+  ["TanWhale","@tanwhale"],["CoreLucy","@corelucy"],["NonceMax","@noncemax"],["HashIvy","@hashivy"],
+  ["RigOmar","@rigomar"],["VoltNia","@voltnia"],["BitKen","@bitken"],["MineAva","@mineava"],
+  ["HashLeo","@hashleo"],["TanZoe","@tanzoe"],["NodeRex","@noderex"],["ChipAmy","@chipamy"],
+  ["WattBea","@wattbea"],["PoolSid","@poolsid"],["RigNia","@rignia"],["HashCal","@hashcal"],
+  ["GoldPip","@goldpip"],["OreNash","@orenash"],["VoltKen","@voltken"],["TanMira","@tanmira"],
+  ["ShaftBo","@shaftbo"],["CoreNix","@corenix"],["HashUma","@hashuma"],["RigTess","@rigtess"]
+];
+function hashStr(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return h>>>0; }
+function boardData(mode){
+  const day=today();
+  const week=day.slice(0,8)+String(Math.ceil(Number(day.slice(8))/7)).padStart(2,"0");
+  const salt=mode==="daily"?day:(mode==="weekly"?week:"all");
+  const rows=SAMPLE.map(function(pair,i){
+    const h=hashStr(pair[0]+salt+String(i));
+    const base=mode==="daily"?180+i*37:(mode==="weekly"?2400+i*210:18000+i*430);
+    const jitter=h%180;
+    return {name:pair[0], user:pair[1], tan:base+jitter+(28-i)*11, me:false};
+  });
+  if(wallet){
+    const mined=Math.floor((state.claimed||0)+(state.tan||0));
+    const mineVal=mode==="daily"?Math.floor(state.todayMined||0): (mode==="weekly"?Math.max(mined, Math.floor((state.todayMined||0)*6)):mined);
+    rows.push({name:state.name||tgName, user:tgUsername, tan:mineVal, me:true});
+  }
+  return rows.sort(function(a,b){ return b.tan-a.tan || a.name.localeCompare(b.name); }).slice(0,50);
+}
+function renderBoard(){
+  document.querySelectorAll(".seg button").forEach(function(b){ b.classList.toggle("on", b.getAttribute("data-board")===boardMode); });
+  const title=boardMode==="daily"?"Daily":(boardMode==="weekly"?"Weekly":"All-time");
+  if(!wallet){ setText("boardGate","Connect wallet to join the "+title.toLowerCase()+" board."); setText("myRank",""); const board=document.getElementById("board"); if(board) board.innerHTML=""; return; }
+  const rows=boardData(boardMode); const rank=rows.findIndex(function(r){ return r.me; })+1;
+  setText("boardGate", title+" top 50 · updates with mined TAN");
+  setText("myRank", rank?("Your rank: #"+rank+" · "+fmt(rows[rank-1].tan)+" TAN"):"Not in top 50 yet");
+  const board=document.getElementById("board");
+  if(board) board.innerHTML=rows.map(function(r,i){
+    const badge=i===0?" g":(i===1?" s":(i===2?" b":""));
+    const ini=(r.name||"M").charAt(0).toUpperCase();
+    return '<div class="board-row '+(r.me?"me":"")+'"><div class="board-left"><div class="rank-badge'+badge+'">'+(i+1)+'</div><div class="avatar-sm">'+ini+'</div><div class="who"><b>'+r.name+(r.me?" (you)":"")+'</b><span>'+(r.user||"")+'</span></div></div><span>'+fmt(r.tan)+' TAN</span></div>';
+  }).join("");
+}
+function tick(){
+  const now=Date.now();
+  if(document.visibilityState==="visible") credit((now-lastTick)/1000);
+  lastTick=now; state.last=now;
+  paintLive();
+  if(now-lastSave>=15000) save(false);
+}
+function copyId(){
+  const t=String(myId);
+  function ok(){ setText("copyIdBtn", "Copied"); setTimeout(function(){ setText("copyIdBtn","ID: "+myId+" ⧉"); },1200); }
+  if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok).catch(ok);
+  else ok();
+}
+function toggleWallet(){
+  if(!tonUI){ alertTan("TON Connect is not ready yet."); return; }
+  try {
+    if(wallet) tonUI.disconnect();
+    else tonUI.openModal();
+  } catch(e){ alertTan("Could not open wallet connect."); }
+}
+
+document.getElementById("core").onclick=toggle;
+document.getElementById("helpBtn").onclick=function(){ alertTan("Holding wallet = TAN in your TON wallet.\nMining wallet = TAN mined in the miniapp.\nAssets = both combined, used to unlock miner levels 1 to 1000."); };
+document.getElementById("claimBtnMine").onclick=claim;
+document.getElementById("wdBtn").onclick=withdraw;
+document.getElementById("chestBtn").onclick=openChest;
+document.getElementById("chanBtn").onclick=openChannel;
+document.getElementById("groupBtn").onclick=openGroup;
+document.getElementById("adBtn").onclick=watchAdBoost;
+document.getElementById("taskAdBtn").onclick=watchAdTask;
+document.getElementById("refBtn").onclick=invite;
+document.getElementById("taskRefBtn").onclick=invite;
+document.getElementById("copyBtn").onclick=copyInvite;
+document.getElementById("copyIdBtn").onclick=copyId;
+document.getElementById("connectBar").onclick=toggleWallet;
+document.getElementById("wdToggle").onclick=function(){ document.getElementById("wdBody").classList.toggle("hidden"); };
+document.getElementById("histToggle").onclick=function(){ document.getElementById("histBody").classList.toggle("hidden"); renderProfileExtras(); };
+document.getElementById("prevMiners").onclick=function(){ if(storePage>0){ storePage--; storeTouched=true; renderMiners(); } };
+document.getElementById("nextMiners").onclick=function(){ if(storePage<maxStorePage()){ storePage++; storeTouched=true; renderMiners(); } };
+document.querySelectorAll(".tabs button").forEach(function(btn){ btn.onclick=function(){ showPage(btn.getAttribute("data-tab")); }; });
+document.querySelectorAll(".seg button").forEach(function(btn){ btn.onclick=function(){ boardMode=btn.getAttribute("data-board"); renderBoard(); }; });
+document.addEventListener("visibilitychange", function(){ if(document.visibilityState==="visible"){ collectReferralRewards(); settleOffline(); } else { state.last=Date.now(); save(true); } });
+
+try{ if(window.Adsgram) ads = window.Adsgram.init({ blockId: CONFIG.ADSGRAM_BLOCK_ID }); }catch(e){}
+try{
+  if(window.TON_CONNECT_UI){
+    tonUI=new TON_CONNECT_UI.TonConnectUI({manifestUrl:CONFIG.MANIFEST_URL, buttonRootId:"tc-btn"});
+    tonUI.onStatusChange(function(w){ onWallet((w && w.account && w.account.address) || null); });
+  }
+}catch(e){}
+
+hydrateCloud(); applyReferral(); settleOffline();
+setInterval(tick,1000); setInterval(function(){ collectReferralRewards(); refreshHold(); },60000); render();
+</script>
+</body>
+  </html>
