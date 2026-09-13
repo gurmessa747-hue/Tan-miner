@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Tan Miner</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+  <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+  <style>
+    :root {
+      --bg:#070b12; --surface:#121826; --text:#f3f6fb; --muted:#8b98a8;
+      --accent:#f5b942; --btn-text:#1a1408; --line:#243044; --good:#3ddc97;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      font-family:system-ui,-apple-system,Segoe UI,sans-serif;
+      background:radial-gradient(1200px 500px at 50% -10%,#3a2a12,var(--bg));
+      color:var(--text);min-height:100vh;
+      padding:calc(12px + env(safe-area-inset-top)) 16px calc(96px + env(safe-area-inset-bottom));
+    }
+    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .brand{font-weight:900;letter-spacing:.08em;font-size:14px}
+    #tc-btn{transform:scale(.82);transform-origin:right center}
+    .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .card{background:color-mix(in srgb,var(--surface) 92%,black);border:1px solid var(--line);border-radius:16px;padding:12px;margin-top:8px}
+    .label{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+    .value{font-size:20px;font-weight:800;margin-top:4px}
+    .core-wrap{display:grid;place-items:center;margin:14px 0 8px}
+    .core{
+      width:180px;height:180px;border-radius:50%;border:3px solid var(--accent);
+      background:radial-gradient(circle at 38% 30%,#ffe08a,#d18a10 46%,#2a1c08 78%);
+      box-shadow:0 0 48px rgba(245,185,66,.32);color:#1a1408;font-weight:900;font-size:20px
+    }
+    .core.off{filter:grayscale(.7);box-shadow:none}
+    .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    button.act{
+      border:0;border-radius:12px;padding:10px 12px;font-weight:800;
+      background:var(--accent);color:var(--btn-text);white-space:nowrap
+    }
+    button.act:disabled{opacity:.45}
+    .muted{color:var(--muted);font-size:12px}
+    .hidden{display:none!important}
+    .bar{height:8px;background:#1b2433;border-radius:99px;overflow:hidden;margin-top:8px}
+    .bar>i{display:block;height:100%;width:0;background:var(--accent)}
+    .me{color:var(--accent)}
+    .page h2{margin:4px 0 8px;font-size:20px}
+    .tabs{
+      position:fixed;left:0;right:0;bottom:0;display:grid;
+      grid-template-columns:repeat(5,1fr);gap:4px;
+      padding:8px 8px calc(8px + env(safe-area-inset-bottom));
+      background:color-mix(in srgb,var(--bg) 92%,black);
+      border-top:1px solid var(--line);
+    }
+    .tabs button{
+      border:0;border-radius:12px;padding:8px 4px 6px;
+      background:transparent;color:var(--muted);font-weight:800;font-size:10px;
+    }
+    .tabs button.on{background:var(--accent);color:var(--btn-text)}
+    .tabs button span{display:block;font-size:16px;line-height:1.2}
+    .pill{color:var(--good);font-weight:800;font-size:12px}
+    .list .row{padding:10px 0;border-bottom:1px solid var(--line)}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">TAN MINER</div>
+    <div id="tc-btn"></div>
+  </header>
+
+  <section id="page-mine" class="page">
+    <div class="stats">
+      <div class="card"><div class="label">Unclaimed</div><div class="value" id="bal">0</div></div>
+      <div class="card"><div class="label">Hashrate</div><div class="value" id="rate">0 H/s</div></div>
+      <div class="card"><div class="label">Claimed</div><div class="value" id="claimed">0</div></div>
+      <div class="card"><div class="label">Streak</div><div class="value" id="streak">0</div></div>
+    </div>
+    <div class="core-wrap"><button class="core" id="core">AUTO ON</button></div>
+    <p class="muted" id="status"></p>
+    <p class="muted" id="offlineNote"></p>
+  </section>
+
+  <section id="page-tasks" class="page hidden">
+    <h2>Tasks</h2>
+    <div class="card row">
+      <div>
+        <div class="label">Daily chest</div>
+        <div class="muted" id="chestNote">Open once per day</div>
+      </div>
+      <button class="act" id="chestBtn">Open</button>
+    </div>
+    <div class="card row">
+      <div>
+        <div class="label">Watch ad</div>
+        <div class="muted">Complete an ad for 2x boost</div>
+      </div>
+      <button class="act" id="taskAdBtn">Do task</button>
+    </div>
+    <div class="card row">
+      <div>
+        <div class="label">Connect wallet</div>
+        <div class="muted" id="taskWallet">Required for claim and board</div>
+      </div>
+    </div>
+    <div class="card row">
+      <div>
+        <div class="label">Invite a miner</div>
+        <div class="muted">Friend gets +10% hashrate</div>
+      </div>
+      <button class="act" id="taskRefBtn">Invite</button>
+    </div>
+  </section>
+
+  <section id="page-boost" class="page hidden">
+    <h2>Boost</h2>
+    <div class="card">
+      <div class="label">Holder boost · Tanola TAN</div>
+      <div class="row" style="margin-top:6px">
+        <div class="muted" id="holdStatus">Connect wallet</div>
+        <div class="pill" id="holdMult">1.00x</div>
+      </div>
+      <div class="bar"><i id="holdBar"></i></div>
+      <div class="muted" id="holdNext" style="margin-top:6px"></div>
+    </div>
+    <div class="card row">
+      <div>
+        <div class="label">Ad boost</div>
+        <div class="muted" id="adStatus">Watch ad · 2x / 15 min</div>
+      </div>
+      <button class="act" id="adBtn">Watch ad</
