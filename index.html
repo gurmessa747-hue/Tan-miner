@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Tan Miner</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://sad.adsgram.ai/js/sad.min.js"></script>
+  <style>
+    :root{--text:#e8eef7;--muted:#9aa6b4;--accent:#f5b942;--btn-text:#1a1408;--good:#3dff8b}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:var(--text);min-height:100vh;background:linear-gradient(#1a2230,#121820 42%,#0b1018);padding:calc(10px + env(safe-area-inset-top)) 14px calc(128px + env(safe-area-inset-bottom))}
+    header,.page,.tabs{position:relative;z-index:1}
+    header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+    .brand{font-weight:900;letter-spacing:.08em;font-size:14px;color:#fff}
+    #tc-btn{transform:scale(.82);transform-origin:right center;min-height:32px}
+    .card,.journey,.pcard,.task-card,.stat,.miner-row{background:linear-gradient(180deg,#1a2230,#121820);border:1px solid #2a3545}
+    .card{border-radius:16px;padding:12px;margin-top:8px}
+    .label{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+    .row{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    button.act{border:0;border-radius:12px;padding:10px 12px;font-weight:800;background:var(--accent);color:var(--btn-text)}
+    button.act:disabled{opacity:.45}
+    .muted{color:var(--muted);font-size:12px}
+    .hidden{display:none!important}
+    .page h2{margin:4px 0 8px;font-size:20px;color:#fff}
+    .tabs{position:fixed;left:0;right:0;bottom:0;z-index:9999;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:10px 6px max(16px,env(safe-area-inset-bottom));background:#0b1018;border-top:1px solid #2a3545}
+    .tabs button{border:0;border-radius:14px;padding:14px 2px;min-height:52px;background:transparent;color:#8aa0b8;font-weight:800;font-size:13px}
+    .tabs button.on{background:var(--accent);color:var(--btn-text)}
+    #refLink{margin:0;word-break:break-all;font-size:12px;color:#8aa0b8}
+    .mine-hero{text-align:center;padding-top:6px}
+    .ready-row{display:flex;justify-content:center;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+    .chip{border-radius:999px;padding:6px 10px;font-size:11px;font-weight:800;background:#152033;border:1px solid #2a3545}
+    .chip.good{color:#3dff8b;border-color:#1f6a3d}
+    .chip.warn{color:#f5c518;border-color:#6a5410}
+    .assets-kicker{letter-spacing:.28em;font-size:11px;color:#9aa6b4;margin-top:8px}
+    .assets-val{font-size:34px;font-weight:900;margin:6px 0 10px;color:#fff}
+    .assets-val span{color:#f5b942;font-size:18px}
+    .pill-box{display:inline-block;min-width:72%;border-radius:999px;padding:8px 14px;margin:5px 0;background:#152033;border:1px solid #2a3545;font-size:12px;font-weight:800}
+    .earn-box{display:inline-block;min-width:58%;margin:12px 0 8px;padding:10px 18px;border-radius:16px;background:linear-gradient(#0d1c12,#08140d);border:1px solid #1e6a3a;color:#3dff8b;font-size:34px;font-weight:900}
+    .coin-stage{position:relative;height:250px;margin:4px auto 8px;max-width:320px}
+    .coin-glow{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);width:180px;height:70px;border-radius:50%;background:radial-gradient(circle,rgba(245,185,66,.55),transparent 70%);filter:blur(6px)}
+    .coin{position:absolute;left:50%;top:18px;transform:translateX(-50%);width:176px;height:176px;border-radius:50%;background:radial-gradient(circle at 35% 28%,#fff3b0,#f0c34a 38%,#b07a12 70%,#6a4708 100%);display:grid;place-items:center}
+    .coin b{font-size:42px;color:#2b1c05}
+    .help{position:absolute;left:8px;bottom:18px;width:42px;height:42px;border-radius:50%;border:1px solid #2a3545;background:#152033;color:#f5e2b0;font-weight:900;font-size:20px}
+    .gold-btn{border:0;background:linear-gradient(#ffd24a,#f0a307);color:#2a1a05;box-shadow:0 8px 24px rgba(245,185,66,.28);font-weight:900}
+    .claim-big{width:100%;border-radius:18px;padding:16px;font-size:20px}
+    .claim-big:disabled{opacity:.45}
+    .connect-mine{width:100%;margin-top:10px;border:0;border-radius:14px;padding:14px 16px;background:#1e7dff;color:#fff;font-weight:800;font-size:16px;display:flex;justify-content:space-between}
+    .store-title{text-align:center;font-size:26px;font-weight:900;color:#fff}
+    .store-sub{text-align:center;color:var(--muted);font-size:12px;margin:6px 0 10px}
+    .journey{border-radius:18px;padding:14px}
+    .journey-top{display:flex;justify-content:space-between}
+    .peak-pill{background:#3a1830;color:#ff7aa2;border-radius:999px;padding:6px 10px;font-size:11px;font-weight:800}
+    .journey h3{font-size:11px;letter-spacing:.08em;color:#9aa6b4;text-transform:uppercase}
+    .journey .lvl{font-size:20px;font-weight:900;margin-top:4px;color:#fff}
+    .pnl{margin-top:8px;font-size:13px;color:#9aa6b4}
+    .pnl b{color:var(--good)}
+    .spark{width:100%;height:64px;margin-top:8px;display:block}
+    .chart-link{display:flex;justify-content:space-between;margin-top:8px;color:var(--good);font-size:12px;font-weight:800}
+    #minerScroll{margin-top:10px;height:min(62vh,560px);overflow-y:auto;border:1px solid #2a3545;border-radius:18px;background:#0f141c}
+    #minerGrid{position:relative;width:100%}
+    .miner-row{position:absolute;left:8px;right:8px;height:56px;border-radius:14px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between}
+    .miner-row.active{border-color:#3dff8b}
+    .miner-row.next{border-color:#f5b942}
+    .miner-row .mlvl{font-size:13px;font-weight:800;color:#fff}
+    .miner-row .mspeed{font-size:11px;color:#9aa6b4}
+    .mbtn{border:0;border-radius:10px;padding:8px 10px;font-weight:900;font-size:11px}
+    .mbtn.on{background:#22c55e;color:#05210f}
+    .mbtn.need{background:#f5c518;color:#1a1408}
+    .mbtn.lock{background:#152033;color:#8aa0b8}
+    .phead h2{font-size:28px;font-weight:900;color:#fff}
+    .phead p{color:#9aa6b4;font-size:13px;margin-top:4px}
+    .pcard{border-radius:20px;padding:14px;margin-top:10px}
+    .userline{display:flex;align-items:center;gap:10px}
+    .avatar{width:46px;height:46px;border-radius:50%;background:#0e1116;display:grid;place-items:center;overflow:hidden}
+    .avatar img{width:100%;height:100%;object-fit:cover}
+    .uname{flex:1}
+    .uname b{display:block;font-size:18px;color:#fff}
+    .uname span{color:#9aa6b4;font-size:13px}
+    .idpill{border:1px solid #334155;color:#cbd5e1;border-radius:999px;padding:6px 10px;font-size:12px;background:#0f141c}
+    .connect-bar{margin-top:12px;width:100%;border:0;border-radius:14px;padding:14px 16px;background:#1e7dff;color:#fff;font-weight:800;font-size:16px;display:flex;justify-content:space-between}
+    .asset-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #243040}
+    .asset-row:last-child{border-bottom:0}
+    .asset-ico{width:42px;height:42px;border-radius:12px;background:#0f141c;display:grid;place-items:center;font-size:20px}
+    .asset-txt{flex:1}
+    .asset-txt b{display:block;color:#fff;font-size:15px}
+    .asset-txt span{color:#7f8b99;font-size:12px}
+    .asset-txt .usd{color:#3dff8b;font-weight:800}
+    .asset-val{font-weight:900;color:#fff;font-size:16px}
+    .acc-head{width:100%;border:0;background:transparent;color:#fff;display:flex;justify-content:space-between;font-weight:800;font-size:16px;padding:4px 0}
+    .acc-body{padding-top:10px}
+    .acc-body input{width:100%;margin:8px 0;border-radius:12px;border:1px solid #334155;background:#0f141c;color:#fff;padding:12px}
+    .hist-item{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #243040;font-size:12px;color:#cbd5e1}
+    .soon-box{margin-top:10px;border-radius:14px;padding:14px;background:#152033;border:1px dashed #3a4a5c;text-align:center}
+    .soon-box b{display:block;color:#f5c518;font-size:16px;margin-bottom:4px}
+    .friends-hero{text-align:center;margin:2px 0 12px}
+    .friends-hero h2{font-size:28px;font-weight:900;color:#fff;margin:0}
+    .friends-hero p{color:#9aa6b4;font-size:13px;margin-top:6px}
+    .fcard{display:flex;align-items:center;gap:12px;border-radius:18px;padding:14px;margin-top:10px;background:linear-gradient(180deg,#1a2230,#121820);border:1px solid #2a3545}
+    .fico{width:42px;height:42px;border-radius:12px;background:#0f141c;display:grid;place-items:center;font-size:20px;flex:0 0 42px}
+    .ftxt{flex:1;min-width:0}
+    .ftxt b{display:block;color:#fff;font-size:15px}
+    .ftxt span{display:block;color:#8aa0b8;font-size:12px;margin-top:3px;word-break:break-all}
+    .fbtn{border:0;border-radius:999px;padding:8px 14px;font-weight:900;font-size:13px;background:#f5c518;color:#1a1408}
+    .fbtn:disabled{background:#2a3545;color:#8aa0b8}
+    .dot-live{color:#3dff8b;font-weight:800}
+    .friends-mid{margin-top:18px;min-height:50vh}
+    .friends-mid .kicker{text-align:center;color:#9aa6b4;font-size:12px;letter-spacing:.04em;margin-bottom:10px}
+    .flist-card{position:relative;border-radius:18px;padding:12px;margin-top:10px;background:linear-gradient(180deg,rgba(26,34,48,.95),rgba(12,18,28,.96));border:1px solid #2a3545;overflow:hidden}
+    .flist-card.ok{border-color:#1f6a3d}
+    .flist-card.wait{border-color:#6a5410}
+    .flist-row{display:flex;align-items:center;gap:10px;position:relative;z-index:1}
+    .fav{width:40px;height:40px;border-radius:50%;background:#152033;display:grid;place-items:center;color:#8aa0b8}
+    .fname{flex:1}
+    .fname b{display:block;color:#fff;font-size:16px}
+    .fname .st{font-size:12px;font-weight:800;margin-top:3px}
+    .st.ok{color:#3dff8b}
+    .st.wait{color:#f5c518}
+    .fcoin{width:38px;height:38px;border-radius:50%;background:radial-gradient(circle at 35% 28%,#fff3b0,#f0c34a 38%,#b07a12 70%);display:grid;place-items:center;font-size:9px;font-weight:900;color:#2b1c05}
+    .muted{color:var(--muted);font-size:12px}
+    .earn-title{font-size:26px;font-weight:900;color:#fff;margin:2px 0 10px;text-align:center}
+    .task-card{border-radius:22px;padding:16px;margin-top:12px}
+    .check-head{display:flex;justify-content:space-between;gap:10px}
+    .check-head h3{color:#fff;font-size:18px}
+    .check-head p{color:#9aa6b4;font-size:12px;margin-top:4px}
+    .reward-pill{background:#c8ff3d;color:#13200a;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:900}
+    .days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:16px 0 14px}
+    .day{text-align:center}
+    .day-num{width:32px;height:32px;border-radius:50%;margin:0 auto 6px;display:grid;place-items:center;font-weight:900;font-size:13px;background:#1a2433;color:#8aa0b8;border:1px solid #2a3a4d}
+    .day.on .day-num{background:#0f2a1c;color:#c8ff3d;border-color:#3dff8b}
+    .day.done .day-num{background:#163024;color:#9dffc0;border-color:#2a6a45}
+    .day-amt{font-size:11px;color:#8aa0b8;font-weight:800}
+    .day.on .day-amt,.day.done .day-amt{color:#c8ff3d}
+    .task-cta{width:100%;border-radius:16px;padding:14px;font-size:15px}
+    .task-cta:disabled,.task-cta:not(.go){background:#223044;color:#6b7c90;box-shadow:none}
+    .soc-head{display:flex;justify-content:space-between;gap:8px;margin-bottom:12px}
+    .soc-head b{color:#fff;font-size:16px}
+    .soc-rew{color:#c8ff3d;font-weight:900;font-size:13px}
+    .soc-rew span{color:#f5b942}
+  </style>
+</head>
+<body>
+  <header><div class="brand">TAN MINER</div><div id="tc-btn" class="hidden"></div></header>
+
+  <section id="page-mine" class="page">
+    <div class="mine-hero">
+      <div class="ready-row"><div class="chip good" id="readyChip">● READY</div><div class="chip warn" id="lvlLeft">0 TAN left to Lvl UP</div></div>
+      <div class="assets-kicker">ASSETS</div>
+      <div class="assets-val" id="assetsVal">0.00000000 <span>TAN</span></div>
+      <div class="pill-box" id="holdPill">HOLDING WALLET: 0 TAN</div>
+      <div class="pill-box" id="poolPill">POOL WALLET: 0 TAN</div>
+      <div class="earn-box" id="earnBox">+0.00000000</div>
+      <div class="coin-stage"><div class="coin-glow"></div><div class="coin" id="core"><b>TAN</b></div><button class="help" id="helpBtn">?</button></div>
+      <button class="gold-btn claim-big" id="claimBtnMine">CLAIM</button>
+      <p class="muted" id="claimNoteMine" style="margin-top:8px">Watch an ad to claim from 0.0001 TAN</p>
+      <button class="connect-mine" id="connectMine"><span id="connectMineText">Connect Wallet</span><span>↗</span></button>
+      <p class="muted" id="status"></p><p class="muted" id="offlineNote"></p><p class="muted" id="todayNote"></p><p class="muted" id="rateLine"></p>
+    </div>
+  </section>
+
+  <section id="page-tasks" class="page hidden">
+    <div class="earn-title">Earn Rewards</div>
+    <div class="task-card">
+      <div class="check-head"><div><h3>Daily Check-in</h3><p id="checkSub">Day 1 of 7. Miss a day and streak restarts.</p></div><div class="reward-pill" id="checkPill">+5 TAN</div></div>
+      <div class="days" id="checkDays"></div>
+      <button class="task-cta gold-btn go" id="chestBtn">CHECK IN</button>
+    </div>
+    <div class="task-card"><div class="soc-head"><b>Join @Tanolaminer</b><div class="soc-rew">+15 <span>TAN</span></div></div><button class="task-cta gold-btn go" id="chanBtn">↗ START</button></div>
+    <div class="task-card"><div class="soc-head"><b>Join community</b><div class="soc-rew">+15 <span>TAN</span></div></div><button class="task-cta gold-btn go" id="groupBtn">↗ START</button></div>
+    <div class="task-card"><div class="soc-head"><b>Watch ad</b><div class="soc-rew" id="taskAdRew">+15 <span>TAN</span></div></div><button class="task-cta gold-btn go" id="taskAdBtn">↗ START</button></div>
+    <div class="task-card"><div class="soc-head"><b>Ad boost · 2x / 15 min</b><div class="soc-rew">2x</div></div><button class="task-cta gold-btn go" id="adBtn">↗ START</button></div>
+    <div class="task-card"><div class="soc-head"><b>Connect wallet</b><div class="soc-rew">+15 <span>TAN</span></div></div><button class="task-cta gold-btn go" id="taskWalletBtn">↗ START</button></div>
+    <div class="task-card"><div class="soc-head"><b>Invite a miner</b><div class="soc-rew">+100 <span>TAN</span></div></div><button class="task-cta gold-btn go" id="taskRefBtn">↗ START</button></div>
+  </section>
+
+  <section id="page-boost" class="page hidden">
+    <div class="store-title">Miner Store</div>
+    <div class="store-sub">Levels 1–1000. Scroll continuously.</div>
+    <div class="journey">
+      <div class="journey-top"><div><h3>My level journey</h3><div class="lvl" id="journeyLvl">Level 1 / 1000</div></div><div class="peak-pill" id="peakPill">Peak 1</div></div>
+      <div class="pnl">Today's P&L <b id="todayPnl">+0 TAN</b></div>
+      <svg class="spark" id="spark" viewBox="0 0 300 64" preserveAspectRatio="none"></svg>
+      <div class="chart-link"><span>Holdings</span><span id="holdTotal">0 TAN</span></div>
+    </div>
+    <div class="card row"><div><div class="label">Holdings used for unlocks</div><div class="muted" id="holdBreakdown">Claimed 0 + Chain 0</div></div></div>
+    <p class="muted" id="pageNote" style="margin-top:8px;text-align:center">Levels 1 to 1000</p>
+    <div id="minerScroll"><div id="minerGrid"></div></div>
+  </section>
+
+  <section id="page-invite" class="page hidden">
+    <div class="friends-hero">
+      <h2>Friends</h2>
+      <p>Invite friends to boost mining speed!</p>
+    </div>
+    <div class="fcard">
+      <div class="fico">🔗</div>
+      <div class="ftxt"><b>Your Invite Link</b><span id="refLink">https://t.me/Tanminer_bot/app</span></div>
+      <button class="fbtn" id="copyBtn">Copy</button>
+    </div>
+    <div class="fcard">
+      <div class="fico">👥</div>
+      <div class="ftxt"><b>Your Referrals</b><span id="refSummary">0 qualified · 0 total</span></div>
+    </div>
+    <div class="fcard">
+      <div class="fico">🎁</div>
+      <div class="ftxt"><b>Referral Reward</b><span id="refRewardLine">0 available · +100 TAN each</span></div>
+      <button class="fbtn" id="refClaimBtn" disabled>Claim</button>
+    </div>
+    <div class="fcard">
+      <div class="fico">⏳</div>
+      <div class="ftxt"><b>Team Wallet <span class="dot-live">● mining</span></b><span id="teamWalletLine">0 TAN · Earnings from your network</span></div>
+      <button class="fbtn" id="refBtn">Share</button>
+    </div>
+    <div class="friends-mid">
+      <div class="kicker">Latest invited friends</div>
+      <div id="friendList"></div>
+      <div id="pendingList"></div>
+    </div>
+  </section>
+
+  <section id="page-profile" class="page hidden">
+    <div class="phead"><h2>Profile & Wallet</h2><p>Manage balances and request on-chain TAN withdrawals.</p></div>
+    <div class="pcard">
+      <div class="userline">
+        <div class="avatar" id="profAvatar"><b>T</b></div>
+        <div class="uname"><b id="profName">Miner</b><span id="tgUsername">No username</span></div>
+        <button class="idpill" id="copyIdBtn">ID: —</button>
+      </div>
+      <button class="connect-bar" id="connectBar"><span id="connectBarText">Connect Wallet</span><span>↗</span></button>
+    </div>
+    <div class="pcard">
+      <div class="asset-row"><div class="asset-ico">👜</div><div class="asset-txt"><b>Total Assets</b><span class="usd" id="usdVal">~$0.00 USD</span></div><div class="asset-val" id="totalAssets">0 TAN</div></div>
+      <div class="asset-row"><div class="asset-ico">🧊</div><div class="asset-txt"><b>Holding Wallet</b><span>On-chain TAN</span></div><div class="asset-val" id="holdAmt">0 TAN</div></div>
+      <div class="asset-row"><div class="asset-ico">🪨</div><div class="asset-txt"><b>Claimed Wallet</b><span>Claimed from mining</span></div><div class="asset-val" id="mineAmt">0 TAN</div></div>
+    </div>
+    <div class="pcard">
+      <button class="acc-head" id="wdToggle"><span>🏧 Withdraw TAN</span><span>⌄</span></button>
+      <div class="acc-body hidden" id="wdBody">
+        <div class="soon-box">
+          <b>Coming soon</b>
+          <p class="muted" id="wdNote">On-chain TAN withdrawals are not open yet.</p>
+        </div>
+        <button class="act" id="wdBtn" style="width:100%;margin-top:10px" disabled>Coming soon</button>
+      </div>
+    </div>
+    <div class="pcard">
+      <button class="acc-head" id="histToggle"><span>🔖 Withdrawal History</span><span>⌄</span></button>
+      <div class="acc-body hidden" id="histBody"></div>
+    </div>
+    <p class="muted" id="lifeNote" style="margin-top:10px"></p>
+  </section>
+
+  <nav class="tabs">
+    <button class="on" data-tab="mine">Mine</button>
+    <button data-tab="tasks">Tasks</button>
+    <button data-tab="boost">Boost</button>
+    <button data-tab="invite">Friends</button>
+    <button data-tab="profile">Profile</button>
+  </nav>
+
+<script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+<script>
+const CONFIG = {
+  MANIFEST_URL:"https://tan-miner.vercel.app/tonconnect-manifest.json",
+  BOT_USERNAME:"Tanminer_bot", APP_SHORT_NAME:"app",
+  CHANNEL_LINK:"https://t.me/Tanolaminer", GROUP_LINK:"https://t.me/Tanminercommunity",
+  ADSGRAM_BLOCK_ID:"47693", TAN_MASTER:"EQAm7g9TfpInfWprTLjRSL4PZGm9UpOq05NuoakjzuUYw4V1",
+  TAN_DECIMALS:9, MIN_WITHDRAW:0, MIN_CLAIM:0.0001, AD_MS:15*60*1000, AD_NOFILL_FALLBACK:true,
+  TASK_REWARD:15, CHECKIN:[5,6,7,8,9,10,15], REFERRAL_REWARD:100,
+  BASE_HASH:0.0001, RIG_STEP:0.0000001, OFFLINE_CAP_HOURS:8, MAX_MINER_LEVEL:1000,
+  AD_TASK_DAILY_LIMIT:20, USD_PER_TAN:0.0015,
+  API_URL:"https://tan-miner.vercel.app/api", REF_API:"https://tan-miner.vercel.app/api/ref",
+  WITHDRAW_ENABLED:false
+};
+const ROW_H=64;
+const tg=window.Telegram&&window.Telegram.WebApp;
+const user=tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user;
+const myId=String((user&&user.id)||"guest");
+const tgUsername=(user&&user.username)?"@"+user.username:"No username";
+const tgName=(user&&((user.first_name||"")+(user.last_name?" "+user.last_name:"")))||(user&&user.username)||"Miner";
+const tgPhoto=(user&&user.photo_url)||"";
+try{tg&&tg.ready();tg&&tg.expand();}catch(e){}
+try{tg&&tg.setHeaderColor&&tg.setHeaderColor("#121820");tg&&tg.setBackgroundColor&&tg.setBackgroundColor("#121820");}catch(e){}
+try{if(tg&&tg.MainButton)tg.MainButton.hide();}catch(e){}
+
+const KEY="tan-miner-final-v1";
+const REF_BOX="tan-miner-ref-box-v1";
+const PAGES=["mine","tasks","boost","invite","profile"];
+const state=load();
+let wallet=null,ads=null,lastTick=Date.now(),claiming=false,adBusy=false,lastSave=0,tonUI=null,minerBound=false;
+
+function today(){return new Date().toISOString().slice(0,10);}
+function minerNeed(lvl){if(lvl<=1)return 0;return Math.floor((lvl-1)*(lvl-1)*1.5);}
+function minerHash(lvl){return CONFIG.BASE_HASH+CONFIG.RIG_STEP*Math.max(0,lvl-1);}
+function totalHold(){return (Number(state.claimed)||0)+(Number(state.tanHeld)||0);}
+function poolBal(){return Number(state.claimed)||0;}
+function unlockedLevel(hold){let lo=1,hi=CONFIG.MAX_MINER_LEVEL,ans=1;while(lo<=hi){const mid=(lo+hi)>>1;if(hold>=minerNeed(mid)){ans=mid;lo=mid+1;}else hi=mid-1;}return ans;}
+function syncMinerLevel(){const unlocked=unlockedLevel(totalHold());state.rigLevel=Math.max(0,unlocked-1);state.peakLevel=Math.max(state.peakLevel||1,unlocked);return unlocked;}
+function resetAdDay(){if(state.adTaskDate!==today()){state.adTaskDate=today();state.adTaskCount=0;}}
+function adLeft(){resetAdDay();return Math.max(0,CONFIG.AD_TASK_DAILY_LIMIT-(state.adTaskCount||0));}
+function checkStreakDay(){const s=Math.max(1,Math.min(7,Number(state.streak)||1));if(state.lastChest===today())return s;const y=new Date(Date.now()-86400000).toISOString().slice(0,10);if(state.lastChest===y)return Math.min(7,s+1);return 1;}
+function checkReward(){return CONFIG.CHECKIN[checkStreakDay()-1];}
+function base(){return {tan:0,claimed:0,last:Date.now(),on:true,adBoostUntil:0,tanHeld:0,streak:0,lastChest:"",referredBy:"",refBoost:false,invites:0,paidRefs:[],refList:[],openedChannel:false,joinedChannel:false,openedGroup:false,joinedGroup:false,rigLevel:0,peakLevel:1,todayKey:"",todayMined:0,lifetime:0,walletTaskPaid:false,qualifiedSent:false,adTaskDate:"",adTaskCount:0,pnl:[0,0,0,0,0,0,0,0,0,0,0,0],name:tgName};}
+function load(){try{return Object.assign(base(),JSON.parse(localStorage.getItem(KEY)||"{}"));}catch(e){return base();}}
+function persistLocal(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+function save(force){persistLocal();const now=Date.now();if(!force&&now-lastSave<15000)return;lastSave=now;try{if(tg&&tg.CloudStorage&&tg.CloudStorage.setItem)tg.CloudStorage.setItem(KEY,JSON.stringify(state),function(){});}catch(e){}}
+function numMax(a,b){return Math.max(Number(a)||0,Number(b)||0);}
+function hydrateCloud(){try{if(tg&&tg.CloudStorage&&tg.CloudStorage.getItem){tg.CloudStorage.getItem(KEY,function(err,val){if(err||!val)return;try{const remote=JSON.parse(val);if(!remote||typeof remote!=="object")return;state.tan=numMax(state.tan,remote.tan);state.claimed=numMax(state.claimed,remote.claimed);state.lifetime=numMax(state.lifetime,remote.lifetime);state.todayMined=numMax(state.todayMined,remote.todayMined);state.invites=numMax(state.invites,remote.invites);state.peakLevel=numMax(state.peakLevel,remote.peakLevel);state.rigLevel=numMax(state.rigLevel,remote.rigLevel);state.adBoostUntil=numMax(state.adBoostUntil,remote.adBoostUntil);state.walletTaskPaid=!!(state.walletTaskPaid||remote.walletTaskPaid);state.qualifiedSent=!!(state.qualifiedSent||remote.qualifiedSent);state.joinedChannel=!!(state.joinedChannel||remote.joinedChannel);state.joinedGroup=!!(state.joinedGroup||remote.joinedGroup);state.openedChannel=!!(state.openedChannel||remote.openedChannel);state.openedGroup=!!(state.openedGroup||remote.openedGroup);state.refBoost=!!(state.refBoost||remote.refBoost);if(remote.referredBy&&!state.referredBy)state.referredBy=remote.referredBy;if(Array.isArray(remote.paidRefs))state.paidRefs=Array.from(new Set((state.paidRefs||[]).concat(remote.paidRefs)));if(Array.isArray(remote.refList)&&remote.refList.length>=(state.refList||[]).length)state.refList=remote.refList;persistLocal();render();}catch(e){}});}}catch(e){}}
+function fmt(n){return Math.floor(Number(n)||0).toLocaleString();}
+function fmtDec(n,d){return (Number(n)||0).toFixed(d==null?8:d);}
+function left(ms){const s=Math.max(0,Math.ceil(ms/1000));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0");}
+function inviteLink(){return "https://t.me/"+CONFIG.BOT_USERNAME+"/"+CONFIG.APP_SHORT_NAME+"?startapp=ref"+encodeURIComponent(myId);}
+function startParam(){const unsafe=(tg&&tg.initDataUnsafe)||{};return String(unsafe.start_param||unsafe.startParam||"").trim();}
+function alertTan(msg){try{if(tg&&tg.showAlert)tg.showAlert(msg);else alert(msg);}catch(e){alert(msg);}}
+function confirmTan(msg,cb){try{if(tg&&tg.showConfirm){tg.showConfirm(msg,function(ok){if(ok)cb();});return;}}catch(e){}if(window.confirm(msg))cb();}
+function openTg(url){try{if(tg&&tg.openTelegramLink)tg.openTelegramLink(url);else window.open(url,"_blank");}catch(e){window.open(url,"_blank");}}
+function readRefBox(){try{return JSON.parse(localStorage.getItem(REF_BOX)||"{}");}catch(e){return {};}}
+function writeRefBox(box){try{localStorage.setItem(REF_BOX,JSON.stringify(box));}catch(e){}}
+function initData(){return (tg&&tg.initData)||"";}
+function api(path,opts){opts=opts||{};opts.headers=Object.assign({"Content-Type":"application/json","X-Telegram-Init-Data":initData()},opts.headers||{});return fetch((CONFIG.API_URL||"")+path,opts);}
+function normRef(item){
+  if(item==null) return null;
+  if(typeof item==="string") return {id:String(item),at:Date.now(),qualified:false,wallet:"",reward:CONFIG.REFERRAL_REWARD};
+  const id=String(item.id||item.userId||"");
+  if(!id) return null;
+  return {id:id,at:item.at||item.joinedAt||Date.now(),qualified:!!(item.qualified||item.wallet),wallet:item.wallet||"",reward:item.reward||CONFIG.REFERRAL_REWARD,qualifiedAt:item.qualifiedAt||null,username:item.username||item.name||""};
+}
+function upsertRefBox(referrerId,newUserId,extra){
+  referrerId=String(referrerId||"");newUserId=String(newUserId||"");extra=extra||{};
+  if(!referrerId||!newUserId||referrerId===newUserId) return;
+  const box=readRefBox();
+  const list=Array.isArray(box[referrerId])?box[referrerId]:[];
+  let idx=-1;
+  list.forEach(function(x,i){if(String(typeof x==="string"?x:(x.id||""))===newUserId)idx=i;});
+  let found=idx>=0?normRef(list[idx]):{id:newUserId,at:Date.now(),qualified:false,wallet:"",reward:CONFIG.REFERRAL_REWARD};
+  if(extra.wallet){found.wallet=extra.wallet;found.qualified=true;found.qualifiedAt=Date.now();}
+  if(idx>=0) list[idx]=found; else list.push(found);
+  box[referrerId]=list;writeRefBox(box);
+}
+function postRef(payload){
+  fetch(CONFIG.REF_API,{method:"POST",headers:{"Content-Type":"application/json","X-Telegram-Init-Data":initData()},body:JSON.stringify(Object.assign({initData:initData()},payload))}).catch(function(){});
+}
+function registerReferral(referrerId,newUserId){upsertRefBox(referrerId,newUserId,{});postRef({referrerId:referrerId,userId:newUserId,qualified:false});}
+function qualifyReferral(referrerId,newUserId,walletAddr){
+  if(!referrerId||!newUserId||!walletAddr) return;
+  upsertRefBox(referrerId,newUserId,{wallet:walletAddr});
+  postRef({referrerId:referrerId,userId:newUserId,wallet:walletAddr,qualified:true});
+  state.qualifiedSent=true;save(true);
+}
+function mergeRefIntoState(item){
+  const n=normRef(item); if(!n||!n.id||n.id===myId) return false;
+  if(!state.refList) state.refList=[];
+  if(!state.paidRefs) state.paidRefs=[];
+  let cur=null, idx=-1;
+  state.refList.forEach(function(x,i){if(String(x.id)===n.id){cur=x;idx=i;}});
+  if(idx<0){state.refList.unshift(n);cur=n;}
+  else {state.refList[idx]=Object.assign({},cur,n,{qualified:!!(cur.qualified||n.qualified),wallet:n.wallet||cur.wallet||""});cur=state.refList[idx];}
+  let paid=false;
+  if(cur.qualified && state.paidRefs.indexOf(cur.id)<0){
+    state.paidRefs.push(cur.id);
+    state.tan+=CONFIG.REFERRAL_REWARD;
+    state.invites=(state.invites||0)+1;
+    paid=true;
+  }
+  return paid;
+}
+function collectReferralRewards(){
+  if(!state.refList) state.refList=[];
+  if(!state.paidRefs) state.paidRefs=[];
+  let added=0;
+  ((readRefBox()[myId])||[]).forEach(function(item){ if(mergeRefIntoState(item)) added++; });
+  fetch(CONFIG.REF_API+"?referrerId="+encodeURIComponent(myId),{headers:{"X-Telegram-Init-Data":initData()}})
+    .then(function(r){return r.json();})
+    .then(function(data){
+      (data.list||[]).forEach(function(item){ if(mergeRefIntoState(item)) added++; });
+      if(added){alertTan("+"+(added*CONFIG.REFERRAL_REWARD)+" TAN from "+added+" qualified referral"+(added>1?"s":""));save(true);}
+      renderFriends();
+    }).catch(function(){ if(added){alertTan("+"+(added*CONFIG.REFERRAL_REWARD)+" TAN from qualified referrals");save(true);} renderFriends(); });
+}
+function applyReferral(){
+  let p=startParam();
+  if(!p){try{const q=new URLSearchParams(location.search);p=q.get("tgWebAppStartParam")||q.get("startapp")||"";}catch(e){}}
+  if(p.indexOf("ref")===0&&p.slice(3)&&p.slice(3)!==myId&&!state.referredBy){
+    state.referredBy=p.slice(3);state.refBoost=true;registerReferral(state.referredBy,myId);
+  } else if(state.referredBy) registerReferral(state.referredBy,myId);
+  if(wallet&&state.referredBy) qualifyReferral(state.referredBy,myId,wallet);
+  collectReferralRewards();
+}
+function multipliers(){return {ad:Date.now()<state.adBoostUntil?2:1,ref:state.refBoost?1.1:1,total:(Date.now()<state.adBoostUntil?2:1)*(state.refBoost?1.1:1)};}
+function hashrate(){syncMinerLevel();return minerHash((state.rigLevel||0)+1)*multipliers().total;}
+function rollToday(earned){if(state.todayKey!==today()){state.todayKey=today();state.todayMined=0;}state.todayMined+=earned;state.lifetime+=earned;}
+function credit(sec){if(!state.on||sec<=0)return 0;const earned=hashrate()*sec;state.tan+=earned;rollToday(earned);return earned;}
+function settleOffline(){const now=Date.now();const gone=Math.max(0,(now-(state.last||now))/1000);const cap=CONFIG.OFFLINE_CAP_HOURS*3600;const used=Math.min(gone,cap);const earned=credit(used);state.last=now;lastTick=now;setText("offlineNote",earned>0?("Offline +"+fmtDec(earned)+" TAN"+(gone>cap?" (8h cap)":"")):"");}
+function setText(id,v){const el=document.getElementById(id);if(el)el.textContent=v;}
+function canClaim(){return !!(state.tan>=CONFIG.MIN_CLAIM&&!claiming);}
+function styleCta(btn,mode,label){if(!btn)return;btn.disabled=mode==="done";btn.textContent=label;btn.className="task-cta gold-btn"+(mode==="done"?"":" go");}
+function drawSpark(){const svg=document.getElementById("spark");if(!svg)return;const pts=state.pnl&&state.pnl.length?state.pnl.slice():[0,0,0,0,0,0,0,0,0,0,0,state.todayMined||0];if(pts.length<2)pts.push(pts[0]||0);const max=Math.max(0.0000001,Math.max.apply(null,pts));const w=300,h=64;const d=pts.map(function(v,i){const x=i*(w/(pts.length-1));const y=h-8-((v/max)*(h-16));return (i?"L":"M")+x.toFixed(1)+","+y.toFixed(1);}).join(" ");svg.innerHTML='<path d="'+d+'" fill="none" stroke="#ff4d7a" stroke-width="3" stroke-linecap="round"/>';}
+function bindMinerScroll(){if(minerBound)return;const wrap=document.getElementById("minerScroll");if(!wrap)return;minerBound=true;wrap.addEventListener("scroll",function(){renderMiners();},{passive:true});}
+function scrollMinersToCurrent(){const wrap=document.getElementById("minerScroll");if(!wrap)return;wrap.scrollTop=Math.max(0,(syncMinerLevel()-3)*ROW_H);renderMiners();}
+function renderMiners(){
+  const wrap=document.getElementById("minerScroll"),grid=document.getElementById("minerGrid");if(!wrap||!grid)return;
+  bindMinerScroll();const hold=totalHold(),current=syncMinerLevel();
+  grid.style.height=(CONFIG.MAX_MINER_LEVEL*ROW_H)+"px";
+  const top=wrap.scrollTop||0,view=wrap.clientHeight||400;
+  const start=Math.max(1,Math.floor(top/ROW_H)-2),end=Math.min(CONFIG.MAX_MINER_LEVEL,start+Math.ceil(view/ROW_H)+6);
+  let html="";
+  for(let lvl=start;lvl<=end;lvl++){
+    const leftAmt=Math.max(0,minerNeed(lvl)-hold);
+    const cls=lvl===current?" active":(lvl===current+1?" next":"");
+    const btn=lvl<=current?'<button class="mbtn on">ACTIVE</button>':lvl===current+1?'<button class="mbtn need">NEED '+fmtDec(leftAmt,2)+'</button>':'<div class="mbtn lock">🔒</div>';
+    html+='<div class="miner-row'+cls+'" style="top:'+((lvl-1)*ROW_H+4)+'px"><div><div class="mlvl">Lvl '+lvl+' / 1000</div><div class="mspeed">'+minerHash(lvl).toFixed(7)+' H/s</div></div>'+btn+'</div>';
+  }
+  grid.innerHTML=html;setText("pageNote","Scroll levels 1–1000 · now at Lvl "+current);
+}
+function renderCheckin(){
+  const doneToday=state.lastChest===today();
+  const day=doneToday?Math.max(1,Math.min(7,state.streak||1)):checkStreakDay();
+  setText("checkSub","Day "+day+" of 7. Miss a day and streak restarts.");
+  setText("checkPill","+"+(doneToday?(CONFIG.CHECKIN[(state.streak||1)-1]||5):checkReward())+" TAN");
+  const box=document.getElementById("checkDays");
+  if(box) box.innerHTML=CONFIG.CHECKIN.map(function(amt,i){const n=i+1;const cls=doneToday&&n<=(state.streak||0)?"done":(!doneToday&&n===day?"on":"");return '<div class="day '+cls+'"><div class="day-num">'+n+'</div><div class="day-amt">+'+amt+'</div></div>';}).join("");
+  styleCta(document.getElementById("chestBtn"),doneToday?"done":"go",doneToday?"CHECKED IN ✓":"CHECK IN");
+}
+function paintLive(){
+  const hold=totalHold(),current=syncMinerLevel(),nextNeed=minerNeed(Math.min(CONFIG.MAX_MINER_LEVEL,current+1));
+  const av=document.getElementById("assetsVal");if(av)av.innerHTML=fmtDec(hold)+' <span>TAN</span>';
+  setText("holdPill","HOLDING WALLET: "+fmtDec(state.tanHeld||0,4)+" TAN");
+  setText("poolPill","POOL WALLET: "+fmtDec(poolBal(),4)+" TAN");
+  setText("earnBox","+"+fmtDec(state.tan||0));
+  setText("lvlLeft",current>=CONFIG.MAX_MINER_LEVEL?"MAX LEVEL 1000":fmtDec(Math.max(0,nextNeed-hold),2)+" TAN left to Lvl UP");
+  setText("readyChip",state.on?"● READY":"● PAUSED");
+  setText("rateLine","Hashrate "+hashrate().toFixed(7)+" H/s · Lvl "+current+" / 1000");
+  setText("todayNote","Today +"+fmtDec(state.todayMined||0)+" TAN");
+  const claimBtnMine=document.getElementById("claimBtnMine");if(claimBtnMine)claimBtnMine.disabled=!canClaim();
+  setText("totalAssets",fmtDec(hold,2)+" TAN");setText("holdAmt",fmtDec(state.tanHeld||0,2)+" TAN");setText("mineAmt",fmtDec(poolBal(),2)+" TAN");
+  setText("usdVal","~$"+(hold*CONFIG.USD_PER_TAN).toFixed(2)+" USD");
+}
+function renderFriends(){
+  const all=(state.refList||[]).map(normRef).filter(Boolean);
+  const q=all.filter(function(x){return x.qualified;});
+  const n=all.filter(function(x){return !x.qualified;});
+  const profit=q.reduce(function(s,x){return s+(Number(x.reward)||CONFIG.REFERRAL_REWARD);},0);
+  const pendingPay=q.filter(function(x){return (state.paidRefs||[]).indexOf(x.id)<0;}).length;
+  setText("refSummary", q.length+" qualified · "+all.length+" total");
+  setText("refRewardLine", pendingPay+" available · +"+CONFIG.REFERRAL_REWARD+" TAN each");
+  setText("teamWalletLine", fmt(profit)+" TAN · Earnings from your network");
+  const claimBtn=document.getElementById("refClaimBtn");
+  if(claimBtn){claimBtn.disabled=pendingPay<=0;claimBtn.textContent=pendingPay>0?"Claim":"Claimed";}
+  function row(f,ok){
+    const name=f.username?"@"+String(f.username).replace(/^@/,""):String(f.id||"");
+    const st=ok?'<div class="st ok">● Active</div>':'<div class="st wait">● Waiting wallet</div>';
+    return '<div class="flist-card '+(ok?"ok":"wait")+'"><div class="flist-row"><div class="fav">👤</div><div class="fname"><b>'+name+'</b>'+st+'</div><div class="fcoin">TAN</div></div></div>';
+  }
+  const qBox=document.getElementById("friendList");
+  const nBox=document.getElementById("pendingList");
+  if(qBox) qBox.innerHTML=q.length?q.map(function(f){return row(f,true);}).join(""):"";
+  if(nBox) nBox.innerHTML=n.length?n.map(function(f){return row(f,false);}).join(""):(q.length?"":'<p class="muted" style="text-align:center">No invited friends yet.</p>');
+}
+function walletLabel(){return wallet?(wallet.slice(0,6)+"..."+wallet.slice(-4)):"Connect Wallet";}
+function renderProfileExtras(){
+  setText("profName",tgName);setText("tgUsername",tgUsername);setText("copyIdBtn","ID: "+myId+" ⧉");
+  const av=document.getElementById("profAvatar");
+  if(av){if(tgPhoto)av.innerHTML='<img alt="" src="'+tgPhoto+'"/>';else av.innerHTML="<b>"+(tgName.charAt(0)||"T").toUpperCase()+"</b>";}
+  setText("connectBarText",walletLabel());setText("connectMineText",walletLabel());
+  const wdBtn=document.getElementById("wdBtn");
+  if(wdBtn){wdBtn.disabled=true;wdBtn.textContent="Coming soon";}
+  setText("wdNote","On-chain TAN withdrawals are not open yet.");
+  const hist=document.getElementById("histBody");
+  if(hist){let q=[];try{q=JSON.parse(localStorage.getItem("tan-withdraws")||"[]");}catch(e){}hist.innerHTML=q.length?q.map(function(x){return '<div class="hist-item"><span>'+new Date(x.ts||Date.now()).toLocaleString()+'</span><span>'+fmt(x.amt)+' TAN · '+(x.status||"pending")+'</span></div>';}).join(""):'<p class="muted">No withdrawals yet.</p>';}
+}
+function render(){
+  resetAdDay();if(!state.pnl)state.pnl=[0,0,0,0,0,0,0,0,0,0,0,0];state.pnl[state.pnl.length-1]=state.todayMined||0;
+  paintLive();renderCheckin();
+  setText("claimNoteMine",claiming?"Watch the ad...":"Watch an ad to claim from 0.0001 TAN");
+  setText("status",state.on?"Auto-mining. Offline cap 8 hours.":"Miner off. Tap the coin to resume.");
+  if(state.joinedChannel)styleCta(document.getElementById("chanBtn"),"done","DONE ✓");else if(state.openedChannel)styleCta(document.getElementById("chanBtn"),"go","CHECK");else styleCta(document.getElementById("chanBtn"),"go","↗ START");
+  if(state.joinedGroup)styleCta(document.getElementById("groupBtn"),"done","DONE ✓");else if(state.openedGroup)styleCta(document.getElementById("groupBtn"),"go","CHECK");else styleCta(document.getElementById("groupBtn"),"go","↗ START");
+  const adOn=Date.now()<state.adBoostUntil,leftAds=adLeft();
+  setText("taskAdRew",leftAds>0?"+15 TAN · "+leftAds+"/20":"0/20");
+  styleCta(document.getElementById("taskAdBtn"),leftAds>0?"go":"done",leftAds>0?"↗ START":"DONE ✓");
+  styleCta(document.getElementById("adBtn"),(adBusy||adOn||leftAds<=0)?"done":"go",adOn?("ON · "+left(state.adBoostUntil-Date.now())):(leftAds<=0?"DONE ✓":"↗ START"));
+  styleCta(document.getElementById("taskWalletBtn"),(state.walletTaskPaid||wallet)?"done":"go",(state.walletTaskPaid||wallet)?"DONE ✓":"↗ START");
+  styleCta(document.getElementById("taskRefBtn"),"go","↗ START");
+  const current=syncMinerLevel();
+  setText("journeyLvl","Level "+current+" / 1000");
+  setText("peakPill",state.peakLevel>current?((state.peakLevel-current)+" from peak"):("Peak "+(state.peakLevel||current)));
+  setText("todayPnl","+"+fmtDec(state.todayMined||0)+" TAN");
+  setText("holdTotal",fmtDec(totalHold(),4)+" TAN");
+  setText("holdBreakdown","Claimed "+fmtDec(poolBal(),4)+" + Chain "+fmtDec(state.tanHeld||0,4));
+  drawSpark();renderMiners();renderProfileExtras();renderFriends();
+  setText("refLink",inviteLink());
+  setText("lifeNote","Lifetime mined "+fmtDec(state.lifetime)+" TAN · claimed "+fmtDec(state.claimed,4));
+  save(false);
+}
+function showPage(tab){
+  PAGES.forEach(function(p){const el=document.getElementById("page-"+p);if(el)el.classList.toggle("hidden",p!==tab);});
+  document.querySelectorAll(".tabs button").forEach(function(b){b.classList.toggle("on",b.getAttribute("data-tab")===tab);});
+  if(tab==="boost"){renderMiners();scrollMinersToCurrent();}
+  if(tab==="profile"){renderProfileExtras();loadWithdraws();}
+  if(tab==="invite"){renderFriends();collectReferralRewards();}
+}
+function toggle(){state.on=!state.on;state.last=lastTick=Date.now();render();}
+function ensureAds(){try{if(ads&&ads.show)return ads;if(window.Adsgram)ads=window.Adsgram.init({blockId:String(CONFIG.ADSGRAM_BLOCK_ID)});}catch(e){}return ads;}
+function playAd(onDone,onFail){
+  if(adBusy)return;adBusy=true;render();
+  const finish=function(ok,err){adBusy=false;if(ok){if(onDone)onDone();}else if(onFail)onFail(err);render();};
+  const ctrl=ensureAds();
+  if(ctrl&&ctrl.show){ctrl.show().then(function(){finish(true);}).catch(function(err){const msg=String((err&&(err.description||err.message||err.error))||"");if(CONFIG.AD_NOFILL_FALLBACK&&/not ready|no ads|not found|empty|inventory|load/i.test(msg)){alertTan("No ad inventory right now. Claim still counted.");finish(true);return;}finish(false,err);});return;}
+  if(CONFIG.AD_NOFILL_FALLBACK){alertTan("Ads not ready in this session. Claim still counted.");finish(true);return;}
+  finish(false,{description:"AdsGram not ready"});
+}
+function claim(){if(!canClaim())return;claiming=true;render();playAd(function(){const amt=Number(state.tan)||0;if(amt<CONFIG.MIN_CLAIM){claiming=false;render();return;}state.tan=0;state.claimed+=amt;claiming=false;alertTan("Claimed "+fmtDec(amt)+" TAN into assets.");render();save(true);},function(){claiming=false;render();});}
+function loadWithdraws(){api("/withdraw").then(function(r){return r.json();}).then(function(data){try{localStorage.setItem("tan-withdraws",JSON.stringify(data.list||[]));}catch(e){}renderProfileExtras();}).catch(function(){});}
+function withdraw(){alertTan("Withdrawals coming soon.");}
+function handleJoin(kind){
+  const openedKey=kind==="channel"?"openedChannel":"openedGroup",joinedKey=kind==="channel"?"joinedChannel":"joinedGroup";
+  const link=kind==="channel"?CONFIG.CHANNEL_LINK:CONFIG.GROUP_LINK,label=kind==="channel"?"@Tanolaminer":"@Tanminercommunity";
+  if(state[joinedKey])return;
+  if(!state[openedKey]){openTg(link);state[openedKey]=true;alertTan("Join "+label+", then CHECK.");render();return;}
+  api("/member",{method:"POST",body:JSON.stringify({kind:kind,initData:initData()})}).then(function(r){return r.json();}).then(function(data){if(!data.joined){alertTan("Not a member yet.");return;}state[joinedKey]=true;state.tan+=CONFIG.TASK_REWARD;alertTan(label+" verified: +"+CONFIG.TASK_REWARD+" TAN");render();save(true);}).catch(function(){alertTan("Could not verify membership.");});
+}
+function openChest(){if(state.lastChest===today())return;const y=new Date(Date.now()-86400000).toISOString().slice(0,10);const next=state.lastChest===y?Math.min(7,(state.streak||0)+1):1;state.streak=next;const amt=CONFIG.CHECKIN[next-1];state.tan+=amt;state.lastChest=today();alertTan("Day "+next+" check-in: +"+amt+" TAN");render();save(true);}
+function invite(){const link=inviteLink();try{if(tg&&tg.switchInlineQuery){tg.switchInlineQuery(link);return;}}catch(e){}try{if(navigator.share){navigator.share({title:"Tan Miner",url:link}).catch(copyInvite);return;}}catch(e){}copyInvite();}
+function copyInvite(){const link=inviteLink();function done(){setText("copyBtn","Copied");setTimeout(function(){setText("copyBtn","Copy");},1500);alertTan("Mini App link copied.");}if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(link).then(done).catch(fallback);else fallback();function fallback(){const t=document.createElement("textarea");t.value=link;document.body.appendChild(t);t.select();try{document.execCommand("copy");}catch(e){}document.body.removeChild(t);done();}}
+function consumeAdTask(boostOnly){resetAdDay();if(adBusy)return;if(adLeft()<=0){alertTan("Daily ad limit reached.");return;}if(boostOnly&&Date.now()<state.adBoostUntil)return;playAd(function(){resetAdDay();state.adTaskCount=(state.adTaskCount||0)+1;state.adBoostUntil=Date.now()+CONFIG.AD_MS;if(!boostOnly){state.tan+=CONFIG.TASK_REWARD;alertTan("Ad task: +"+CONFIG.TASK_REWARD+" TAN");}else alertTan("Ad boost ON for 15 minutes");save(true);},function(){});}
+function onWallet(addr){
+  wallet=addr||null;
+  if(wallet&&!state.walletTaskPaid){state.walletTaskPaid=true;state.tan+=CONFIG.TASK_REWARD;alertTan("Wallet task: +"+CONFIG.TASK_REWARD+" TAN");}
+  if(wallet&&state.referredBy) qualifyReferral(state.referredBy,myId,wallet);
+  if(!wallet) state.tanHeld=0;
+  refreshHold();render();save(true);
+}
+function refreshHold(){
+  if(!wallet){state.tanHeld=0;paintLive();return;}
+  fetch("https://tonapi.io/v2/accounts/"+encodeURIComponent(wallet)+"/jettons").then(function(r){return r.json();}).then(function(data){
+    const master=CONFIG.TAN_MASTER.toLowerCase(),list=data.balances||[];let hit=null;
+    for(let i=0;i<list.length;i++){const a=((list[i].jetton&&list[i].jetton.address)||"").toLowerCase();if(a===master||a.indexOf("26ee0f53")>=0)hit=list[i];}
+    const raw=hit?Number(hit.balance||0):0;const dec=(hit&&hit.jetton&&hit.jetton.decimals!=null)?hit.jetton.decimals:CONFIG.TAN_DECIMALS;
+    state.tanHeld=raw/Math.pow(10,dec);render();
+  }).catch(function(){render();});
+}
+function tick(){const now=Date.now();if(document.visibilityState==="visible")credit((now-lastTick)/1000);lastTick=now;state.last=now;paintLive();if(now-lastSave>=15000)save(false);}
+function copyId(){const t=String(myId);function ok(){setText("copyIdBtn","Copied");setTimeout(function(){setText("copyIdBtn","ID: "+myId+" ⧉");},1200);}if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(ok).catch(ok);else ok();}
+function toggleWallet(){if(!tonUI){alertTan("TON Connect is not ready yet.");return;}try{if(wallet)tonUI.disconnect();else tonUI.openModal();}catch(e){alertTan("Could not open wallet connect.");}}
+
+document.getElementById("core").onclick=toggle;
+document.getElementById("helpBtn").onclick=function(){alertTan("Assets = claimed + on-chain.\nGreen + is unclaimed until CLAIM.\nReferral +100 only after friend connects a TON wallet.");};
+document.getElementById("claimBtnMine").onclick=claim;
+document.getElementById("wdBtn").onclick=withdraw;
+document.getElementById("chestBtn").onclick=openChest;
+document.getElementById("chanBtn").onclick=function(){handleJoin("channel");};
+document.getElementById("groupBtn").onclick=function(){handleJoin("group");};
+document.getElementById("adBtn").onclick=function(){consumeAdTask(true);};
+document.getElementById("taskAdBtn").onclick=function(){consumeAdTask(false);};
+document.getElementById("refBtn").onclick=invite;
+document.getElementById("taskRefBtn").onclick=invite;
+document.getElementById("copyBtn").onclick=copyInvite;
+document.getElementById("refClaimBtn").onclick=function(){collectReferralRewards();};
+document.getElementById("copyIdBtn").onclick=copyId;
+document.getElementById("connectBar").onclick=toggleWallet;
+document.getElementById("connectMine").onclick=toggleWallet;
+document.getElementById("taskWalletBtn").onclick=toggleWallet;
+document.getElementById("wdToggle").onclick=function(){document.getElementById("wdBody").classList.toggle("hidden");};
+document.getElementById("histToggle").onclick=function(){document.getElementById("histBody").classList.toggle("hidden");renderProfileExtras();loadWithdraws();};
+document.querySelectorAll(".tabs button").forEach(function(btn){btn.onclick=function(){showPage(btn.getAttribute("data-tab"));};});
+document.addEventListener("visibilitychange",function(){if(document.visibilityState==="visible"){collectReferralRewards();settleOffline();}else{state.last=Date.now();save(true);}});
+try{if(window.Adsgram)ads=window.Adsgram.init({blockId:String(CONFIG.ADSGRAM_BLOCK_ID)});}catch(e){}
+setTimeout(ensureAds,400);
+try{if(window.TON_CONNECT_UI){tonUI=new TON_CONNECT_UI.TonConnectUI({manifestUrl:CONFIG.MANIFEST_URL,buttonRootId:"tc-btn"});tonUI.onStatusChange(function(w){onWallet((w&&w.account&&w.account.address)||null);});}}catch(e){}
+hydrateCloud();applyReferral();settleOffline();
+setInterval(tick,1000);setInterval(function(){collectReferralRewards();refreshHold();},60000);render();
+</script>
+</body>
+                                                                                               </html>
